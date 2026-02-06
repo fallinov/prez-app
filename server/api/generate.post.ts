@@ -131,33 +131,10 @@ Dans WordPress : Médiathèque → Champ "Texte alternatif"
 - \`:::steps\` — Étapes numérotées avec badges
 - \`:::points\` — Points avec icônes (non cartes)
 - \`:::tip\` — Conseil mis en valeur
-- \`:::image mots-clés:::\` — Image automatique via mots-clés (ex: \`:::image paris eiffel tower night:::\`)
-- \`:::image https://url.com/photo.jpg:::\` — Image URL directe
 - \`:::video https://youtube.com/watch?v=xxx:::\` — Vidéo YouTube/Vimeo
 
-## Images et médias
-IMPORTANT : Les images sont OPTIONNELLES. Privilégie les icônes, cartes et texte stylisé.
-
-QUAND utiliser une image :
-- Paysages, lieux, objets physiques concrets
-- Maximum 1 image par présentation
-
-QUAND NE PAS utiliser d'image :
-- Concepts techniques (compression, SEO, code, interfaces)
-- Processus abstraits
-- Tout ce qui est mieux représenté par des icônes ou du texte
-
-Si tu utilises une image :
-\`\`\`
-:::image mountain lake
-Paysage alpin
-:::
-\`\`\`
-- Maximum 2 mots-clés SIMPLES en anglais
-- Mots communs : nature, city, office, computer, people, food, car
-- ÉVITER : descriptions longues, termes techniques, adjectifs multiples
-- Exemples BONS : "mountain lake", "office desk", "city night"
-- Exemples MAUVAIS : "compression interface showing optimization", "wordpress media library"
+## Images
+NE PAS utiliser d'images (:::image:::). Privilégie les icônes Lucide, cartes colorées et texte stylisé pour illustrer les concepts.
 
 ## Liens externes (OBLIGATOIRE)
 TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
@@ -292,7 +269,6 @@ Relire la présentation fournie et la retourner CORRIGÉE et AMÉLIORÉE.
 - Ajouter des exemples concrets si manquants
 - Renforcer les transitions entre slides
 - Améliorer la variété des layouts utilisés
-- Ajouter 1-2 images :::image::: si la présentation n'en a pas et que c'est pertinent
 
 # FORMAT DE SORTIE
 Retourne UNIQUEMENT le Markdown corrigé et amélioré, sans commentaires ni explications.

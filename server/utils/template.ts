@@ -522,11 +522,9 @@ function parseSpecialBlocks(content: string): string {
     return renderTipBlock(inner.trim())
   })
 
-  // :::image query ou url
-  // Format 1: :::image paris tour eiffel:::
-  // Format 2: :::image paris tour eiffel\nLégende optionnelle:::
-  html = html.replace(/:::image\s+([^\n:]+?)(?:\n([^:]*?))?:::/g, (_, source, caption) => {
-    return renderImageBlock(source.trim(), (caption || '').trim())
+  // :::image - DÉSACTIVÉ (les images sont retirées pour le moment)
+  html = html.replace(/:::image\s+([^\n:]+?)(?:\n([^:]*?))?:::/g, () => {
+    return '' // Images désactivées
   })
 
   // :::video url:::
