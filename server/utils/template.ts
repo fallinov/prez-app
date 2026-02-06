@@ -407,7 +407,7 @@ function renderHeroSlide(slide: Slide, index: number): string {
             <div class="absolute bottom-20 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
         </div>
         <div class="text-center px-6 relative z-10">
-            <h1 class="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">${formatTitle(slide.title)}</h1>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">${formatHeroTitle(slide.title)}</h1>
             ${subtitle ? `<p class="text-xl md:text-2xl text-white/90 mb-4 animate-fade-in-up delay-100">${escapeHtml(subtitle)}</p>` : ''}
             ${tagsHtml}
             <div class="mt-16 animate-pulse-slow">
@@ -960,6 +960,16 @@ function formatTitle(title: string): string {
   let result = escapeHtml(title)
   // Remplacer **mot** par <span class="text-accent">mot</span>
   result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-accent">$1</span>')
+  return result
+}
+
+/**
+ * Formate le titre hero avec couleur contrastante (jaune sur fond accent)
+ */
+function formatHeroTitle(title: string): string {
+  let result = escapeHtml(title)
+  // Sur fond accent, utiliser jaune clair pour les mots en gras
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-yellow-300">$1</span>')
   return result
 }
 
