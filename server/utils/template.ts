@@ -181,8 +181,8 @@ export function renderPresentation(options: RenderOptions): string {
             overflow-x: hidden;
         }
         .slide-content-wrapper {
-            padding-top: 6rem;
-            padding-bottom: 4rem;
+            padding-top: 4rem;
+            padding-bottom: 2rem;
         }
         .gradient-accent { background: linear-gradient(135deg, ${palette.accent} 0%, ${palette.accentDark} 100%); }
 
@@ -455,7 +455,7 @@ function renderContentSlide(slide: Slide, index: number, bgClass: string): strin
     <section id="slide-${index + 1}" class="slide ${bgClass}">
         <div class="max-w-6xl mx-auto px-6 w-full slide-content-wrapper">
             <span class="text-accent font-mono text-base mb-4 block">${String(index).padStart(2, '0')} / ${escapeHtml(sectionLabel)}</span>
-            <h2 class="text-4xl md:text-5xl font-bold mb-8">${formatTitle(slide.title)}</h2>
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">${formatTitle(slide.title)}</h2>
             <div class="slide-content">
                 ${contentHtml}
             </div>
@@ -573,7 +573,7 @@ function renderTwoColumnLayout(introContent: string, sidebarTitle: string, sideb
   const sidebarHtml = renderSidebarBlockInner(sidebarTitle, sidebarContent)
 
   return `
-    <div class="grid md:grid-cols-2 gap-12 items-start mb-8">
+    <div class="grid md:grid-cols-2 gap-8 items-start mb-6">
         <div>${introHtml}</div>
         ${sidebarHtml}
     </div>`
@@ -603,7 +603,7 @@ function renderIntroBlockInner(content: string): string {
  * Bloc d'introduction avec citation optionnelle
  */
 function renderIntroBlock(content: string): string {
-  return `<div class="mb-8">${renderIntroBlockInner(content)}</div>`
+  return `<div class="mb-6">${renderIntroBlockInner(content)}</div>`
 }
 
 /**
@@ -652,7 +652,7 @@ function renderSidebarBlockInner(title: string, content: string): string {
  * Sidebar avec liste d'items (standalone)
  */
 function renderSidebarBlock(title: string, content: string): string {
-  return `<div class="mb-8">${renderSidebarBlockInner(title, content)}</div>`
+  return `<div class="mb-6">${renderSidebarBlockInner(title, content)}</div>`
 }
 
 /**
@@ -702,7 +702,7 @@ function renderCardsBlock(content: string): string {
   const numCards = cardGroups.length
   const gridCols = numCards <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
 
-  return `<div class="grid ${gridCols} gap-4 mb-8">${cardsHtml}</div>`
+  return `<div class="grid ${gridCols} gap-4 mb-6">${cardsHtml}</div>`
 }
 
 /**
@@ -739,8 +739,8 @@ function renderCompareBlock(content: string): string {
   if (bars.length === 0) return ''
 
   return `
-    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-8">
-        <div class="space-y-4">${bars.join('')}</div>
+    <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-6">
+        <div class="space-y-3">${bars.join('')}</div>
     </div>`
 }
 
@@ -790,7 +790,7 @@ function renderStatsBlock(content: string): string {
       </div>`
   }).join('')
 
-  return `<div class="grid grid-cols-2 gap-4 mb-8">${statsHtml}</div>`
+  return `<div class="grid grid-cols-2 gap-4 mb-6">${statsHtml}</div>`
 }
 
 /**
@@ -811,7 +811,7 @@ function renderStepsBlock(content: string): string {
       </li>`
   }).join('')
 
-  return `<ol class="space-y-4 mt-4 mb-8">${stepsHtml}</ol>`
+  return `<ol class="space-y-3 mt-4 mb-6">${stepsHtml}</ol>`
 }
 
 /**
@@ -851,7 +851,7 @@ function renderPointsBlock(content: string): string {
     return `<div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">${formatInlineMarkdown(trimmed)}</div>`
   }).join('')
 
-  return `<div class="space-y-3 mb-8">${pointsHtml}</div>`
+  return `<div class="space-y-3 mb-6">${pointsHtml}</div>`
 }
 
 /**
@@ -865,7 +865,7 @@ function renderTipBlock(content: string): string {
   cleanContent = cleanContent.replace(/^(✨|💡|🎯|⭐|🚀|✅|⚡|🔥)\s*/g, '')
 
   return `
-    <div class="bg-accent/10 border border-accent/30 p-4 rounded-2xl mt-6 mb-8 flex items-start gap-3">
+    <div class="bg-accent/10 border border-accent/30 p-4 rounded-2xl mt-6 mb-6 flex items-start gap-3">
         <div class="flex-shrink-0 mt-0.5">${lucideIcon('lightbulb', 'w-5 h-5 text-accent')}</div>
         <p class="text-accent font-medium">${formatInlineMarkdown(cleanContent)}</p>
     </div>`
@@ -896,7 +896,7 @@ function renderImageBlock(source: string, caption: string): string {
     : ''
 
   return `
-    <figure class="mb-8">
+    <figure class="mb-6">
         <div class="rounded-2xl overflow-hidden shadow-lg bg-slate-900 flex items-center justify-center">
             <img src="${imageUrl}" alt="${escapeHtml(altText)}" class="max-w-full max-h-80 object-contain" loading="lazy" />
         </div>
@@ -926,7 +926,7 @@ function renderVideoBlock(url: string): string {
   if (!embedUrl) {
     // URL non reconnue, afficher un lien
     return `
-      <div class="mb-8 p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+      <div class="mb-6 p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
           <a href="${escapeHtml(url)}" target="_blank" class="text-accent hover:underline flex items-center gap-2">
               ${lucideIcon('play-circle', 'w-6 h-6')}
               Voir la vidéo
@@ -935,7 +935,7 @@ function renderVideoBlock(url: string): string {
   }
 
   return `
-    <div class="mb-8">
+    <div class="mb-6">
         <div class="relative rounded-2xl overflow-hidden shadow-lg" style="padding-bottom: 56.25%;">
             <iframe
                 src="${embedUrl}"

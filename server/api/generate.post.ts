@@ -161,9 +161,29 @@ TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
 2. **Titres courts** : max 5 mots, 1 mot en **gras**
 3. **Contenu visuel** : alterner les layouts, éviter listes simples
 4. **Concret** : exemples réels (noms fichiers, chiffres, code)
-5. **Équilibré** : chaque slide a assez de contenu sans surcharger
-6. **Varié** : ne pas répéter le même layout 2 fois de suite
-7. **Slide finale** : TOUJOURS terminer par un récapitulatif/checklist avec :::steps
+5. **Varié** : ne pas répéter le même layout 2 fois de suite
+6. **Slide finale** : TOUJOURS terminer par un récapitulatif/checklist avec :::steps
+
+# CONTRAINTES DE DENSITÉ (CRITIQUE - hauteur écran 100vh)
+
+⚠️ **Chaque slide doit tenir sur UN SEUL ÉCRAN sans scroll !**
+
+| Layout | Maximum éléments |
+|--------|-----------------|
+| :::cards | 4 cartes max (grille 2x2) |
+| :::compare | 3 barres max |
+| :::stats | 2 stats max (côte à côte) |
+| :::steps | 5 étapes max |
+| :::points | 4 points max |
+| :::sidebar | 4 items max |
+| Bloc code | 6 lignes max |
+
+**Combinaisons interdites sur UNE slide :**
+- :::compare + :::stats + :::points (trop dense)
+- :::cards (5+) + :::tip
+- :::steps (6+) + :::stats
+
+**Si contenu trop riche → diviser en 2 slides**
 
 # EXEMPLE DE PRÉSENTATION COMPLÈTE
 

@@ -8,6 +8,7 @@ const HTML_REVIEW_PROMPT = `Tu es un expert en HTML/CSS, UX et accessibilité po
 
 # CONTEXTE
 Ces présentations sont affichées sur vidéoprojecteur dans des salles éclairées. La lisibilité est CRITIQUE.
+**Chaque slide = 100vh (hauteur écran). Le contenu NE DOIT PAS dépasser !**
 
 # VÉRIFICATIONS TECHNIQUES
 1. **Balises HTML** : bien formées, fermées correctement
@@ -20,34 +21,39 @@ Ces présentations sont affichées sur vidéoprojecteur dans des salles éclair�
 6. **Sous-textes** : text-slate-300 minimum
 7. **Labels/hints** : si text-slate-400, changer en text-slate-300
 
+# VÉRIFICATIONS DENSITÉ (CRITIQUE - 100vh max)
+8. **Si slide semble dense** (beaucoup d'éléments) : RÉDUIRE les espacements
+   - mb-8 → mb-4
+   - mb-6 → mb-3
+   - space-y-4 → space-y-2
+   - space-y-3 → space-y-2
+   - gap-4 → gap-2
+   - p-6 → p-4
+   - p-5 → p-4
+   - p-4 → p-3
+9. **Padding du wrapper** : si dense, réduire slide-content-wrapper padding
+
 # VÉRIFICATIONS TYPOGRAPHIE
-8. **Taille minimum** : text-sm (14px), jamais text-xs pour du contenu principal
-9. **Hiérarchie** : h1 (titre slide) > h2 > h3, cohérent
-10. **Lisibilité** : pas plus de 6-8 mots par ligne de liste
+10. **Taille minimum** : text-sm (14px), jamais text-xs pour du contenu principal
+11. **Hiérarchie** : h1 > h2 > h3, cohérent
 
 # VÉRIFICATIONS STRUCTURE
-11. **Densité** : pas plus de 6 points principaux par slide
-12. **Espacements** : mb-4 minimum entre blocs, mb-8 entre sections
-13. **Liens** : target="_blank" présent, texte explicite (pas "cliquez ici")
+12. **Liens** : target="_blank" présent, texte explicite
 
 # VÉRIFICATIONS ACCESSIBILITÉ
-14. **Images** : attribut alt présent et descriptif
-15. **Navigation** : structure logique pour lecteurs d'écran
-16. **Focus** : éléments interactifs accessibles au clavier
+13. **Images** : attribut alt présent et descriptif
 
-# CORRECTIONS AUTOMATIQUES À APPLIQUER
+# CORRECTIONS À APPLIQUER
 - text-slate-400 → text-slate-300
 - text-slate-500 → text-slate-300
 - text-slate-600 → text-slate-400
-- text-gray-400 → text-slate-300
-- text-gray-500 → text-slate-300
-- Ajouter alt="" aux images sans alt
 - Ajouter target="_blank" aux liens externes
+- **RÉDUIRE les marges si slide dense**
 
 # RÈGLES STRICTES
 - Retourne UNIQUEMENT le HTML corrigé complet (commence par <!DOCTYPE)
 - Ne modifie JAMAIS le contenu textuel
-- Ne supprime RIEN, corrige seulement
+- Réduis les espacements si tu détectes une slide dense
 - Si tout est correct, retourne le HTML identique`
 
 // Interface pour la palette générée par l'IA
