@@ -147,11 +147,14 @@ Vue panoramique des Alpes
 - Maximum 2-3 images par présentation
 - Place les images après un paragraphe d'introduction, pas en début de slide
 
-## Liens externes
-Ajoute des liens vers les outils, sites et applications mentionnés :
-- Format Markdown : \`[Nom de l'outil](https://url.com)\`
-- Exemples : \`[TinyPNG](https://tinypng.com)\`, \`[Squoosh](https://squoosh.app)\`
-- Liens pertinents uniquement (outils, docs officielles, ressources utiles)
+## Liens externes (OBLIGATOIRE)
+TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
+- Format : \`[Nom](https://url)\`
+- Outils de compression : \`[TinyPNG](https://tinypng.com)\`, \`[Squoosh](https://squoosh.app)\`, \`[Compressor.io](https://compressor.io)\`
+- Conversion : \`[CloudConvert](https://cloudconvert.com)\`, \`[AVIF.io](https://avif.io)\`
+- Performance : \`[PageSpeed Insights](https://pagespeed.web.dev)\`, \`[GTmetrix](https://gtmetrix.com)\`
+- Plugins WP : \`[Imagify](https://imagify.io)\`, \`[ShortPixel](https://shortpixel.com)\`
+- Inclure les liens DANS le texte, pas en liste séparée
 
 ## Cartes avec couleurs
 \`[TITRE|couleur]\` où couleur = yellow, blue, green, red, purple, orange, accent

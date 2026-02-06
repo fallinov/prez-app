@@ -528,10 +528,10 @@ function parseSpecialBlocks(content: string): string {
   })
 
   // :::image query ou url
-  // Format: :::image paris tour eiffel:::  ou  :::image https://example.com/photo.jpg:::
-  // Avec légende optionnelle sur la ligne suivante
-  html = html.replace(/:::image\s+(.+?)\n?(.*?):::/gs, (_, source, caption) => {
-    return renderImageBlock(source.trim(), caption.trim())
+  // Format 1: :::image paris tour eiffel:::
+  // Format 2: :::image paris tour eiffel\nLégende optionnelle:::
+  html = html.replace(/:::image\s+([^\n:]+?)(?:\n([^:]*?))?:::/g, (_, source, caption) => {
+    return renderImageBlock(source.trim(), (caption || '').trim())
   })
 
   // :::video url:::
