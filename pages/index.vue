@@ -346,5 +346,14 @@ function logout() {
         </div>
       </UCard>
     </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-4 mt-8">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+        <p class="text-gray-600 text-sm">
+          <span class="text-primary font-semibold">PREZ</span> v1.0.0 — Générateur de présentations avec IA
+        </p>
+      </div>
+    </footer>
   </div>
 </template>

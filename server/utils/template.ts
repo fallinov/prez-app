@@ -1,9 +1,6 @@
 import type { Slide } from '~/types'
 import { generatePalette } from './palette'
 
-// Version de l'application (synchronisée avec package.json)
-const APP_VERSION = '1.0.0'
-
 interface RenderOptions {
   title: string
   slides: Slide[]
@@ -261,11 +258,8 @@ export function renderPresentation(options: RenderOptions): string {
     <footer class="bg-slate-900 border-t border-slate-800 py-8">
         <div class="max-w-6xl mx-auto px-6 text-center">
             <p class="text-slate-400">${escapeHtml(title)}</p>
-            <p class="text-slate-500 text-sm mt-3">
+            <p class="text-slate-500 text-sm mt-2">
                 <kbd class="px-2 py-1 bg-slate-700 rounded text-slate-300 font-mono text-xs">C</kbd> Mode contraste élevé
-            </p>
-            <p class="text-slate-600 text-xs mt-4 flex items-center justify-center gap-2">
-                Généré avec <span class="text-accent font-semibold">PREZ</span> v${APP_VERSION}
             </p>
         </div>
     </footer>
