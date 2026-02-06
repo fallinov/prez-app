@@ -253,6 +253,28 @@ Optimisée (1800px + compression)|180 Ko|2%|green
 
 GÉNÈRE MAINTENANT LA PRÉSENTATION DEMANDÉE EN UTILISANT CES PATTERNS.`
 
+const REVIEW_PROMPT = `Tu es un relecteur expert de présentations pédagogiques.
+
+# TA MISSION
+Relire la présentation fournie et la retourner CORRIGÉE et AMÉLIORÉE.
+
+# CORRECTIONS À EFFECTUER
+1. **Orthographe et grammaire** : Corriger toutes les fautes
+2. **Clarté** : Reformuler les phrases confuses ou trop longues
+3. **Cohérence** : Vérifier que le fil conducteur est logique
+4. **Équilibre** : S'assurer que chaque slide a assez de contenu sans être surchargée
+5. **Titres** : Vérifier qu'ils sont courts (max 5 mots) avec 1 mot en **gras**
+
+# AMÉLIORATIONS POSSIBLES
+- Ajouter des exemples concrets si manquants
+- Renforcer les transitions entre slides
+- Améliorer la variété des layouts utilisés
+- Ajouter 1-2 images :::image::: si la présentation n'en a pas et que c'est pertinent
+
+# FORMAT DE SORTIE
+Retourne UNIQUEMENT le Markdown corrigé et amélioré, sans commentaires ni explications.
+Conserve EXACTEMENT le même format (séparateurs ---, blocs :::, etc.).`
+
 export default defineEventHandler(async (event) => {
   const { prompt, apiKey, title } = await readBody(event)
 
@@ -272,6 +294,7 @@ export default defineEventHandler(async (event) => {
       ? `Titre de la présentation : "${title}"\n\nContenu source :\n${prompt}`
       : prompt
 
+    // Étape 1 : Génération initiale
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8192,
@@ -285,7 +308,25 @@ export default defineEventHandler(async (event) => {
     })
 
     // Extraire le texte de la réponse
-    const markdown = response.content
+    const initialMarkdown = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as { type: 'text'; text: string }).text)
+      .join('\n')
+
+    // Étape 2 : Relecture et amélioration
+    const reviewResponse = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8192,
+      system: REVIEW_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: `Voici la présentation à relire et améliorer :\n\n${initialMarkdown}`
+        }
+      ]
+    })
+
+    const markdown = reviewResponse.content
       .filter(block => block.type === 'text')
       .map(block => (block as { type: 'text'; text: string }).text)
       .join('\n')
