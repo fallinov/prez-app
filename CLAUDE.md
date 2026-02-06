@@ -4,7 +4,7 @@
 
 Générateur de présentations HTML pédagogiques avec IA (Claude).
 
-**Version** : 1.1.0
+**Version** : 1.2.0
 
 ## Philosophie PREZ
 
@@ -31,26 +31,29 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 | Fonctionnalité | Description |
 |----------------|-------------|
 | **Triple passe IA** | Génération → Relecture → Revue UX/accessibilité |
+| **Éditeur slide par slide** | Modifier chaque slide avec aperçu temps réel |
+| **Palette WCAG éditable** | 5 couleurs générées et modifiables |
 | **Sélecteur de modèle** | Sonnet 4, Opus 4, Haiku 3.5 |
 | **Vidéos YouTube/Vimeo** | Embed responsive avec un simple lien |
 | **Liens cliquables** | Syntaxe Markdown `[texte](url)` supportée |
 | **Icônes Lucide** | Remplacent les emojis pour un rendu pro |
 | **Mode contraste** | Touche C pour vidéoprojecteurs |
-| **Persistance clé API** | Stockée en localStorage (optionnel) |
-| **Modal de progression** | 5 étapes visibles + bouton annuler |
+| **Design System FESOU** | Interface admin thème clair |
 
 ## Pipeline de génération
 
 ```
-1. Génération Markdown     (Sonnet/Opus/Haiku selon choix)
+1. Génération Palette WCAG   (Haiku - rapide)
          ↓
-2. Relecture Markdown      (même modèle)
+2. Génération Markdown       (Sonnet/Opus/Haiku selon choix)
          ↓
-3. Rendu HTML              (template.ts)
+3. Relecture Markdown        (même modèle)
          ↓
-4. Revue UX/Accessibilité  (Haiku - rapide)
+4. Rendu HTML                (template.ts)
          ↓
-5. Sauvegarde
+5. Revue UX/Accessibilité    (Haiku - rapide)
+         ↓
+6. Sauvegarde (HTML + JSON metadata)
 ```
 
 ## Modèles IA disponibles
@@ -68,7 +71,7 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 | Nuxt | 4.x | Framework fullstack |
 | Nuxt UI | 3.x | Composants UI |
 | Anthropic SDK | 0.73+ | API Claude |
-| Tailwind CSS | CDN | Styles présentations |
+| Tailwind CSS | 4.x | Styles admin + présentations |
 | Lucide Icons | CDN | Icônes professionnelles |
 
 ## Architecture
@@ -76,26 +79,52 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 ```
 prez-app/
 ├── pages/
-│   ├── index.vue          # Formulaire principal
-│   └── login.vue          # Auth email
+│   ├── index.vue              # Formulaire + liste présentations
+│   ├── login.vue              # Auth email
+│   └── editor/
+│       └── [filename].vue     # Éditeur slide par slide
 ├── server/
 │   ├── api/
-│   │   ├── generate.post.ts   # IA: Markdown + relecture
-│   │   └── render.post.ts     # HTML + revue UX
+│   │   ├── generate.post.ts       # IA: Palette + Markdown + relecture
+│   │   ├── render.post.ts         # HTML + revue UX
+│   │   ├── presentations/
+│   │   │   └── [filename].get.ts  # Charger une présentation
+│   │   ├── improve.post.ts        # Améliorer toute la présentation
+│   │   ├── improve-slide.post.ts  # Améliorer un slide spécifique
+│   │   ├── preview-slide.post.ts  # Aperçu d'un slide isolé
+│   │   ├── update-palette.post.ts # Mettre à jour la palette
+│   │   └── regenerate-palette.post.ts # Régénérer la palette WCAG
 │   └── utils/
-│       ├── template.ts        # Template HTML
-│       └── palette.ts         # Palettes WCAG
+│       ├── template.ts            # Template HTML présentations
+│       └── palette.ts             # Palettes WCAG
 ├── types/
 │   └── index.ts
-└── assets/css/
-    └── main.css
+├── assets/css/
+│   ├── main.css                   # Import Tailwind + Nuxt UI
+│   └── prez-palette.css           # Design System FESOU
+└── public/generated/              # Présentations générées (HTML + JSON)
 ```
+
+## Design System FESOU
+
+Interface admin en thème clair avec palette emerald :
+
+| Variable | Valeur | Usage |
+|----------|--------|-------|
+| `--color-accent` | #059669 | Couleur principale (boutons, liens) |
+| `--color-muted-50` | #F8FAFC | Fond principal |
+| `--color-muted-950` | #0B1220 | Texte principal |
+| `--color-border` | #CBD5E1 | Bordures |
+
+Classes Tailwind personnalisées :
+- `bg-accent`, `text-accent`, `border-accent`
+- `bg-muted-50` à `bg-muted-950`
 
 ## Accessibilité (CRITICAL)
 
 **Les présentations DOIVENT être lisibles par tous : sur vidéoprojecteur en salle éclairée, par des daltoniens, par des malvoyants.**
 
-### Navigation clavier
+### Navigation clavier (présentation)
 
 | Touche | Action |
 |--------|--------|
@@ -104,6 +133,14 @@ prez-app/
 | Home | Première slide |
 | End | Dernière slide |
 | C | Mode contraste élevé |
+
+### Navigation clavier (éditeur)
+
+| Touche | Action |
+|--------|--------|
+| ↑ / ↓ | Naviguer entre slides |
+| ⌘/Ctrl + Enter | Envoyer le prompt |
+| Escape | Retour à l'accueil |
 
 ### Principes
 
@@ -191,6 +228,13 @@ npm run build  # Production
 2. Conserver le mode contraste (touche C)
 3. Valider les contrastes WCAG
 4. Maximum 6 points par slide
+
+### Lors de modifications interface admin
+
+1. Utiliser les variables du design system FESOU (`prez-palette.css`)
+2. Thème clair uniquement (pas de dark mode admin)
+3. Couleur accent emerald (#059669)
+4. Nuxt UI pour tous les composants
 
 ### Code style
 

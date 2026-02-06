@@ -1,0 +1,94 @@
+/**
+ * PREZ Design System - Palette inspirée de FESOU
+ *
+ * Palette officielle (5 couleurs) - WCAG AAA :
+ * - Primary #0B1220 : texte principal, titres, logo
+ * - Accent #059669 : liens, boutons, actions (vert emerald)
+ * - Background #F8FAFC : fond principal
+ * - Muted #475569 : texte secondaire
+ * - Border #CBD5E1 : bordures, séparateurs
+ */
+
+@theme {
+  /* ACCENT - Action color (emerald green) */
+  --color-accent-50: #ecfdf5;
+  --color-accent-100: #d1fae5;
+  --color-accent-200: #a7f3d0;
+  --color-accent-300: #6ee7b7;
+  --color-accent-400: #34d399;
+  --color-accent-500: #10b981;
+  --color-accent-600: #059669;
+  --color-accent-700: #047857;
+  --color-accent-800: #065f46;
+  --color-accent-900: #064e3b;
+  --color-accent-950: #022c22;
+  --color-accent: #059669;
+  --color-accent-foreground: #ffffff;
+
+  /* MUTED - Neutral/secondary (slate) */
+  --color-muted-50: #f8fafc;
+  --color-muted-100: #f1f5f9;
+  --color-muted-200: #e2e8f0;
+  --color-muted-300: #cbd5e1;
+  --color-muted-400: #94a3b8;
+  --color-muted-500: #64748b;
+  --color-muted-600: #475569;
+  --color-muted-700: #334155;
+  --color-muted-800: #1e293b;
+  --color-muted-900: #0f172a;
+  --color-muted-950: #0b1220;
+  --color-muted: #475569;
+  --color-muted-foreground: #64748b;
+
+  /* BRAND - Primary brand color */
+  --color-brand-950: #0b1220;
+  --color-brand: #0b1220;
+
+  /* SURFACE - Backgrounds */
+  --color-surface: #f8fafc;
+  --color-surface-elevated: #ffffff;
+
+  /* BORDER */
+  --color-border: #cbd5e1;
+}
+
+@layer base {
+  :root {
+    /* Primary = Accent (action color) */
+    --ui-primary: var(--color-accent);
+    --ui-color-primary-50: var(--color-accent-50);
+    --ui-color-primary-100: var(--color-accent-100);
+    --ui-color-primary-200: var(--color-accent-200);
+    --ui-color-primary-300: var(--color-accent-300);
+    --ui-color-primary-400: var(--color-accent-400);
+    --ui-color-primary-500: var(--color-accent-500);
+    --ui-color-primary-600: var(--color-accent-600);
+    --ui-color-primary-700: var(--color-accent-700);
+    --ui-color-primary-800: var(--color-accent-800);
+    --ui-color-primary-900: var(--color-accent-900);
+    --ui-color-primary-950: var(--color-accent-950);
+
+    /* Neutral = Muted */
+    --ui-color-neutral-50: var(--color-muted-50);
+    --ui-color-neutral-100: var(--color-muted-100);
+    --ui-color-neutral-200: var(--color-muted-200);
+    --ui-color-neutral-300: var(--color-muted-300);
+    --ui-color-neutral-400: var(--color-muted-400);
+    --ui-color-neutral-500: var(--color-muted-500);
+    --ui-color-neutral-600: var(--color-muted-600);
+    --ui-color-neutral-700: var(--color-muted-700);
+    --ui-color-neutral-800: var(--color-muted-800);
+    --ui-color-neutral-900: var(--color-muted-900);
+    --ui-color-neutral-950: var(--color-muted-950);
+
+    /* Success = Green */
+    --ui-success: #059669;
+    --ui-color-success-500: #10b981;
+    --ui-color-success-600: #059669;
+
+    /* Error = Red */
+    --ui-error: #dc2626;
+    --ui-color-error-500: #ef4444;
+    --ui-color-error-600: #dc2626;
+  }
+}

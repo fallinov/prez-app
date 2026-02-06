@@ -31,48 +31,55 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-    <UCard class="w-full max-w-md">
-      <template #header>
-        <div class="text-center">
-          <h1 class="text-2xl font-bold text-white">PREZ</h1>
-          <p class="text-gray-400 mt-1">Générateur de présentations</p>
+  <div class="min-h-screen bg-muted-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <!-- Logo et titre -->
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <UIcon name="i-lucide-presentation" class="w-9 h-9 text-white" />
         </div>
-      </template>
+        <h1 class="text-3xl font-bold text-muted-950">PREZ</h1>
+        <p class="text-muted-500 mt-2">Générateur de présentations pédagogiques</p>
+      </div>
 
-      <form @submit.prevent="handleLogin" class="space-y-4">
-        <UFormField label="Email" name="email">
-          <UInput
-            v-model="email"
-            type="email"
-            placeholder="votre@email.ch"
-            required
-            size="lg"
+      <!-- Card de connexion -->
+      <div class="bg-white rounded-2xl border border-muted-200 shadow-sm overflow-hidden">
+        <form @submit.prevent="handleLogin" class="p-6 space-y-5">
+          <UFormField label="Email" name="email">
+            <UInput
+              v-model="email"
+              type="email"
+              placeholder="votre@email.ch"
+              required
+              size="lg"
+            />
+          </UFormField>
+
+          <UAlert
+            v-if="error"
+            color="error"
+            :title="error"
+            variant="subtle"
           />
-        </UFormField>
 
-        <UAlert
-          v-if="error"
-          color="error"
-          :title="error"
-          variant="subtle"
-        />
+          <UButton
+            type="submit"
+            block
+            size="lg"
+            :loading="loading"
+            class="!bg-accent hover:!bg-accent-700"
+          >
+            <UIcon name="i-lucide-log-in" class="w-5 h-5 mr-2" />
+            Se connecter
+          </UButton>
+        </form>
 
-        <UButton
-          type="submit"
-          block
-          size="lg"
-          :loading="loading"
-        >
-          Se connecter
-        </UButton>
-      </form>
-
-      <template #footer>
-        <p class="text-center text-sm text-gray-500">
-          Accès réservé aux enseignants ESIG
-        </p>
-      </template>
-    </UCard>
+        <div class="px-6 py-4 bg-muted-50 border-t border-muted-100">
+          <p class="text-center text-sm text-muted-500">
+            Accès réservé aux enseignants ESIG
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

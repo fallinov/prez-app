@@ -4,11 +4,13 @@
 
 Génère des présentations HTML pédagogiques avec Claude AI.
 
-**Version** : 1.1.0
+**Version** : 1.2.0
 
 ## Fonctionnalités
 
 - **Triple passe IA** : Génération → Relecture → Revue UX/accessibilité
+- **Éditeur de slides** : Modification slide par slide avec aperçu en temps réel
+- **Palette WCAG** : Génération et édition des couleurs accessibles
 - **Sélecteur de modèle** : Sonnet 4, Opus 4, Haiku 3.5
 - **Vidéos intégrées** : YouTube et Vimeo
 - **Liens cliquables** : Syntaxe Markdown standard
@@ -29,13 +31,22 @@ npm run dev
 2. Coller sa clé API Claude
 3. Choisir le modèle IA
 4. Décrire la présentation
-5. Télécharger le HTML
+5. Cliquer "Éditer" pour modifier slide par slide
+6. Télécharger le HTML
 
 ## Pipeline de génération
 
 ```
-Génération Markdown → Relecture → Rendu HTML → Revue UX → Sauvegarde
+Palette WCAG → Génération Markdown → Relecture → Rendu HTML → Revue UX → Sauvegarde
 ```
+
+## Interface
+
+| Page | Description |
+|------|-------------|
+| `/` | Formulaire de génération + liste des présentations |
+| `/editor/[filename]` | Éditeur slide par slide avec aperçu |
+| `/login` | Authentification par email |
 
 ## Raccourcis (présentation)
 
@@ -46,6 +57,14 @@ Génération Markdown → Relecture → Rendu HTML → Revue UX → Sauvegarde
 | Home | Première slide |
 | End | Dernière slide |
 | C | Mode contraste élevé |
+
+## Raccourcis (éditeur)
+
+| Touche | Action |
+|--------|--------|
+| ↑ ↓ | Navigation entre slides |
+| ⌘/Ctrl + Enter | Envoyer le prompt |
+| Escape | Retour à l'accueil |
 
 ## Syntaxe Markdown
 
@@ -76,5 +95,6 @@ ALLOWED_EMAILS=steve@esig.ch,collegue@esig.ch
 
 - Nuxt 4 + Nuxt UI 3
 - Claude API (Sonnet 4, Opus 4, Haiku 3.5)
-- Tailwind CSS (CDN)
+- Tailwind CSS
 - Lucide Icons (CDN)
+- Design System FESOU (thème clair)

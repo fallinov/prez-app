@@ -16,6 +16,8 @@ interface RenderOptions {
   baseColor: string
   mode?: 'dark' | 'light'
   palette?: GeneratedPalette
+  previewMode?: boolean  // Mode aperçu : masque footer, navigation, indicateurs
+  slideStartIndex?: number  // Index de départ pour le rendu (pour prévisualiser un slide spécifique)
 }
 
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -116,7 +118,7 @@ function lucideIcon(name: string, className: string = 'w-5 h-5'): string {
  * Génère le HTML complet de la présentation
  */
 export function renderPresentation(options: RenderOptions): string {
-  const { title, slides, baseColor, mode = 'dark', palette: aiPalette } = options
+  const { title, slides, baseColor, mode = 'dark', palette: aiPalette, previewMode = false, slideStartIndex = 0 } = options
 
   // Utiliser la palette IA si fournie, sinon générer une palette de base
   const basePalette = generatePalette(baseColor, mode)
@@ -131,9 +133,13 @@ export function renderPresentation(options: RenderOptions): string {
     textHighlight: aiPalette?.textHighlight || '#fbbf24'
   }
 
-  const slidesHtml = slides.map((slide, index) => renderSlide(slide, index, palette, slides.length)).join('\n')
-  const navDotsHtml = slides.map((_, i) => `
-    <a href="#slide-${i + 1}" class="nav-dot w-4 h-4 rounded-full bg-white/40 hover:bg-accent transition-all" title="Slide ${i + 1}"></a>
+  // Utiliser slideStartIndex pour calculer le vrai index de chaque slide
+  const slidesHtml = slides.map((slide, i) => {
+    const actualIndex = slideStartIndex + i
+    return renderSlide(slide, actualIndex, palette, slides.length + slideStartIndex, previewMode)
+  }).join('\n')
+  const navDotsHtml = previewMode ? '' : slides.map((_, i) => `
+    <a href="#slide-${slideStartIndex + i + 1}" class="nav-dot w-4 h-4 rounded-full bg-white/40 hover:bg-accent transition-all" title="Slide ${slideStartIndex + i + 1}"></a>
   `).join('')
 
   return `<!DOCTYPE html>
@@ -277,14 +283,14 @@ export function renderPresentation(options: RenderOptions): string {
 </head>
 <body class="font-sans overflow-x-hidden">
 
-    <!-- Navigation latérale -->
+    ${previewMode ? '' : `<!-- Navigation latérale -->
     <nav class="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-3">
         ${navDotsHtml}
-    </nav>
+    </nav>`}
 
     ${slidesHtml}
 
-    <!-- Footer -->
+    ${previewMode ? '' : `<!-- Footer -->
     <footer class="bg-slate-900 border-t border-slate-800 py-8">
         <div class="max-w-6xl mx-auto px-6 text-center">
             <p class="text-slate-400">${escapeHtml(title)}</p>
@@ -295,7 +301,7 @@ export function renderPresentation(options: RenderOptions): string {
     </footer>
 
     <!-- Indicateur mode contraste -->
-    <div class="contrast-indicator">Contraste élevé (C)</div>
+    <div class="contrast-indicator">Contraste élevé (C)</div>`}
 
     <script>
         // Navigation state
@@ -363,23 +369,39 @@ export function renderPresentation(options: RenderOptions): string {
             });
         });
 
-        // Mode contraste élevé
+        // Mode contraste élevé (avec try-catch pour les iframes sandboxed)
         function initHighContrastMode() {
-            if (localStorage.getItem('highContrast') === 'true') {
-                document.documentElement.classList.add('high-contrast');
-            }
+            try {
+                if (localStorage.getItem('highContrast') === 'true') {
+                    document.documentElement.classList.add('high-contrast');
+                }
+            } catch (e) { /* localStorage non disponible dans iframe */ }
         }
 
         function toggleHighContrast() {
             const isActive = document.documentElement.classList.toggle('high-contrast');
-            localStorage.setItem('highContrast', isActive.toString());
+            try {
+                localStorage.setItem('highContrast', isActive.toString());
+            } catch (e) { /* localStorage non disponible dans iframe */ }
         }
 
         initHighContrastMode();
 
-        // Initialiser Lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+        // Initialiser Lucide icons (avec retry pour les iframes)
+        function initLucideIcons() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            } else {
+                // Retry après un court délai si le script n'est pas encore chargé
+                setTimeout(initLucideIcons, 100);
+            }
+        }
+
+        // Lancer au chargement du DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLucideIcons);
+        } else {
+            initLucideIcons();
         }
     </script>
 </body>
@@ -389,12 +411,12 @@ export function renderPresentation(options: RenderOptions): string {
 /**
  * Génère le HTML d'une slide
  */
-function renderSlide(slide: Slide, index: number, palette: any, totalSlides: number): string {
+function renderSlide(slide: Slide, index: number, palette: any, totalSlides: number, previewMode: boolean = false): string {
   const isFirst = index === 0
   const bgClass = isFirst ? 'gradient-accent' : (index % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800')
 
   if (isFirst) {
-    return renderHeroSlide(slide, index)
+    return renderHeroSlide(slide, index, previewMode)
   }
 
   return renderContentSlide(slide, index, bgClass)
@@ -403,7 +425,7 @@ function renderSlide(slide: Slide, index: number, palette: any, totalSlides: num
 /**
  * Slide de titre (hero)
  */
-function renderHeroSlide(slide: Slide, index: number): string {
+function renderHeroSlide(slide: Slide, index: number, previewMode: boolean = false): string {
   const lines = slide.content.split('\n').filter(l => l.trim())
 
   let subtitle = ''
@@ -424,6 +446,14 @@ function renderHeroSlide(slide: Slide, index: number): string {
       </div>`
     : ''
 
+  const scrollIndicator = previewMode ? '' : `
+            <div class="mt-16 animate-pulse-slow">
+                <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                <p class="text-sm text-white/80 mt-2">Défiler pour commencer</p>
+            </div>`
+
   return `
     <section id="slide-${index + 1}" class="slide flex items-center justify-center gradient-accent relative overflow-hidden">
         <div class="absolute inset-0 opacity-10">
@@ -433,13 +463,7 @@ function renderHeroSlide(slide: Slide, index: number): string {
         <div class="text-center px-6 relative z-10">
             <h1 class="text-5xl md:text-7xl font-bold mb-6 animate-fade-in-up">${formatHeroTitle(slide.title)}</h1>
             ${subtitle ? `<p class="text-xl md:text-2xl text-white/90 mb-4 animate-fade-in-up delay-100">${escapeHtml(subtitle)}</p>` : ''}
-            ${tagsHtml}
-            <div class="mt-16 animate-pulse-slow">
-                <svg class="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                </svg>
-                <p class="text-sm text-white/80 mt-2">Défiler pour commencer</p>
-            </div>
+            ${tagsHtml}${scrollIndicator}
         </div>
     </section>`
 }

@@ -3,28 +3,47 @@ import { readFile } from 'fs/promises'
 import { join } from 'path'
 import type { Slide } from '~/types'
 
-const IMPROVE_PROMPT = `Tu es un expert en amélioration de présentations pédagogiques.
+const IMPROVE_PROMPT = `Tu es un expert en amélioration de présentations pédagogiques au format Markdown PREZ.
 
 # TA MISSION
 Modifier le Markdown de la présentation selon les instructions de l'utilisateur.
 
-# RÈGLES
-1. Conserve le format Markdown PREZ (blocs :::, séparateurs ---, etc.)
-2. Conserve la structure générale sauf si l'utilisateur demande explicitement de la changer
-3. Applique UNIQUEMENT les modifications demandées
-4. Ne modifie pas le reste de la présentation
-5. Retourne le Markdown complet modifié
+# FORMAT MARKDOWN PREZ (OBLIGATOIRE)
 
-# CONTRAINTES DE DENSITÉ (CRITIQUE)
-- Maximum 4 cartes par slide
-- Maximum 3 barres de comparaison
-- Maximum 5 étapes numérotées
-- Maximum 4 points avec icônes
-- Si tu ajoutes du contenu, assure-toi que la slide ne dépasse pas ces limites
+## Titres
+- Format : \`# Mot1 **mot-clé** mot3\`
+- Un seul mot en **gras** pour la mise en valeur (couleur accent)
+- JAMAIS de HTML (<span>, <img>, etc.) - utiliser **gras** pour colorier
+
+## Blocs spéciaux disponibles
+- \`:::intro\` — Introduction avec citation
+- \`:::cards\` — Grille de cartes \`[Titre|couleur]\`
+- \`:::compare\` — Barres comparatives
+- \`:::steps\` — Étapes numérotées
+- \`:::points\` — Points avec icônes
+- \`:::tip\` — Conseil
+- \`:::sidebar Titre\` — Panneau latéral
+
+## Couleurs cartes
+\`[TITRE|couleur]\` où couleur = yellow, blue, green, red, purple, orange, accent
+
+## Symboles
+- ✓ positif, ✗ négatif, → action, 💡 astuce, ⚠ attention
+
+# RÈGLES CRITIQUES
+
+1. **JAMAIS de HTML** : Pas de <span>, <img>, <div>, style=, etc.
+2. **Mise en valeur** : Utiliser **gras** uniquement
+3. **Séparateur slides** : \`---\` (3 tirets seuls sur une ligne)
+4. Conserve la structure existante sauf demande explicite
+5. Applique UNIQUEMENT les modifications demandées
+
+# CONTRAINTES DE DENSITÉ
+- Max 4 cartes, 3 compare, 5 steps, 4 points par slide
 
 # FORMAT DE SORTIE
-Retourne UNIQUEMENT le Markdown modifié, sans explication ni commentaire.
-Commence directement par le contenu de la première slide (# Titre).`
+Retourne UNIQUEMENT le Markdown modifié, sans explication.
+Commence directement par le titre de la première slide (# Titre).`
 
 // Interface pour la palette
 interface GeneratedPalette {

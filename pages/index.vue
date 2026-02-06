@@ -398,14 +398,20 @@ function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900">
+  <div class="min-h-screen bg-muted-50">
     <!-- Header -->
-    <header class="border-b border-gray-800 p-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <h1 class="text-xl font-bold text-white">PREZ</h1>
+    <header class="bg-white border-b border-muted-200 sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+            <UIcon name="i-lucide-presentation" class="w-5 h-5 text-white" />
+          </div>
+          <h1 class="text-xl font-bold text-muted-950">PREZ</h1>
+        </div>
         <div class="flex items-center gap-4">
-          <span class="text-gray-400 text-sm">{{ user }}</span>
-          <UButton variant="ghost" size="sm" @click="logout">
+          <span class="text-muted-500 text-sm">{{ user }}</span>
+          <UButton variant="ghost" size="sm" color="neutral" @click="logout">
+            <UIcon name="i-lucide-log-out" class="w-4 h-4 mr-1" />
             Déconnexion
           </UButton>
         </div>
@@ -413,192 +419,190 @@ function logout() {
     </header>
 
     <!-- Main -->
-    <main class="max-w-7xl mx-auto p-6">
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Formulaire -->
-        <UCard>
-          <template #header>
-            <h2 class="text-lg font-semibold text-white">Nouvelle présentation</h2>
-          </template>
+    <main class="max-w-7xl mx-auto px-6 py-8">
+      <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Colonne principale : Formulaire + Résultat -->
+        <div class="flex-1 min-w-0">
+          <!-- Formulaire -->
+          <div class="bg-white rounded-xl border border-muted-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-muted-100 bg-muted-50/50">
+              <h2 class="text-lg font-semibold text-muted-900">Nouvelle présentation</h2>
+              <p class="text-sm text-muted-500 mt-0.5">Générez une présentation pédagogique avec l'IA</p>
+            </div>
 
-          <form @submit.prevent="generatePresentation" class="space-y-4">
-            <UFormField label="Titre de la présentation" name="title" class="w-full">
-              <UInput
-                v-model="title"
-                placeholder="Ex: Gestion des médias WordPress"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Votre clé API Claude" name="apiKey" hint="Stockée localement" class="w-full">
-              <UInput
-                v-model="apiKey"
-                type="password"
-                placeholder="sk-ant-..."
-                required
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Modèle IA" name="model" class="w-full">
-              <USelect
-                v-model="selectedModel"
-                :items="modelOptions"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Couleur de base" name="color" class="w-full">
-              <div class="flex items-center gap-3 w-full">
-                <input
-                  type="color"
-                  v-model="baseColor"
-                  class="w-12 h-10 rounded cursor-pointer"
+            <form @submit.prevent="generatePresentation" class="p-6 space-y-5">
+              <UFormField label="Titre de la présentation" name="title" class="w-full">
+                <UInput
+                  v-model="title"
+                  placeholder="Ex: Gestion des médias WordPress"
+                  class="w-full"
                 />
-                <UInput v-model="baseColor" class="flex-1" />
-              </div>
-            </UFormField>
+              </UFormField>
 
-<UFormField label="Décrivez votre présentation" name="prompt" class="w-full">
-              <UTextarea
-                v-model="prompt"
-                :rows="12"
-                placeholder="Ex: Créer une présentation sur l'optimisation des images pour WordPress. Inclure les formats (JPG, PNG, WebP, AVIF), la compression, le nommage SEO et le texte alternatif. Public : étudiants en informatique de gestion."
-                required
-                class="w-full"
+              <UFormField label="Clé API Claude" name="apiKey" hint="Stockée localement" class="w-full">
+                <UInput
+                  v-model="apiKey"
+                  type="password"
+                  placeholder="sk-ant-..."
+                  required
+                  class="w-full"
+                />
+              </UFormField>
+
+              <div class="grid grid-cols-2 gap-4">
+                <UFormField label="Modèle IA" name="model" class="w-full">
+                  <USelect
+                    v-model="selectedModel"
+                    :items="modelOptions"
+                    class="w-full"
+                  />
+                </UFormField>
+
+                <UFormField label="Couleur accent" name="color" class="w-full">
+                  <div class="flex items-center gap-2 w-full">
+                    <input
+                      type="color"
+                      v-model="baseColor"
+                      class="w-10 h-10 rounded-lg cursor-pointer border border-muted-200"
+                    />
+                    <UInput v-model="baseColor" class="flex-1 font-mono text-sm" />
+                  </div>
+                </UFormField>
+              </div>
+
+              <UFormField label="Contenu source" name="prompt" class="w-full">
+                <UTextarea
+                  v-model="prompt"
+                  :rows="8"
+                  placeholder="Collez ici le contenu de votre cours ou décrivez la présentation à générer..."
+                  required
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UAlert
+                v-if="error"
+                color="error"
+                :title="error"
+                variant="subtle"
               />
-            </UFormField>
 
-            <UAlert
-              v-if="error"
-              color="error"
-              :title="error"
-              variant="subtle"
-              class="mb-4"
-            />
-
-            <UButton
-              type="submit"
-              block
-              size="lg"
-              :loading="loading"
-              :disabled="!prompt || !apiKey"
-            >
-              {{ loading ? 'Génération en cours...' : 'Générer la présentation' }}
-            </UButton>
-          </form>
-        </UCard>
-
-        <!-- Résultat -->
-        <UCard v-if="generatedHtml">
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-lg font-semibold text-white">Résultat</h2>
-              <div class="flex gap-2">
-                <UButton
-                  v-if="generatedUrl"
-                  :to="generatedUrl"
-                  target="_blank"
-                  variant="outline"
-                >
-                  Ouvrir
-                </UButton>
-                <UButton @click="downloadHtml" color="primary">
-                  Télécharger HTML
-                </UButton>
-              </div>
-            </div>
-          </template>
-
-          <div class="space-y-4">
-            <div class="flex items-center justify-between text-sm text-gray-400">
-              <span>{{ slides?.length || 0 }} slides générées</span>
-              <code v-if="generatedUrl" class="text-xs bg-gray-800 px-2 py-1 rounded">
-                {{ generatedUrl }}
-              </code>
-            </div>
-
-            <!-- Liste des slides -->
-            <div class="space-y-2">
-              <div
-                v-for="(slide, i) in slides"
-                :key="i"
-                class="p-3 bg-gray-800 rounded-lg"
+              <UButton
+                type="submit"
+                block
+                size="lg"
+                :loading="loading"
+                :disabled="!prompt || !apiKey"
+                class="!bg-accent hover:!bg-accent-700"
               >
-                <div class="font-medium text-white">
-                  {{ i + 1 }}. {{ slide.title }}
+                <UIcon name="i-lucide-sparkles" class="w-5 h-5 mr-2" />
+                {{ loading ? 'Génération en cours...' : 'Générer la présentation' }}
+              </UButton>
+            </form>
+          </div>
+
+          <!-- Résultat (apparaît après génération) -->
+          <div v-if="generatedHtml" class="mt-6">
+            <div class="bg-white rounded-xl border border-muted-200 shadow-sm overflow-hidden">
+              <div class="px-6 py-4 border-b border-muted-100 bg-accent/5 flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <UIcon name="i-lucide-check-circle" class="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <h2 class="text-lg font-semibold text-muted-900">Présentation générée</h2>
+                    <p class="text-sm text-muted-500">{{ slides?.length || 0 }} slides · {{ title }}</p>
+                  </div>
                 </div>
-                <div class="text-sm text-gray-400 mt-1 line-clamp-2">
-                  {{ slide.preview }}
+                <div class="flex gap-2">
+                  <UButton
+                    v-if="generatedUrl"
+                    as="a"
+                    :href="generatedUrl"
+                    target="_blank"
+                    variant="outline"
+                    color="neutral"
+                    size="sm"
+                  >
+                    <UIcon name="i-lucide-external-link" class="w-4 h-4 mr-1" />
+                    Ouvrir
+                  </UButton>
+                  <UButton
+                    v-if="generatedUrl"
+                    :to="`/editor/${generatedUrl.split('/').pop()}`"
+                    variant="outline"
+                    color="neutral"
+                    size="sm"
+                  >
+                    <UIcon name="i-lucide-pencil" class="w-4 h-4 mr-1" />
+                    Éditer
+                  </UButton>
+                  <UButton @click="downloadHtml" size="sm" class="!bg-accent hover:!bg-accent-700">
+                    <UIcon name="i-lucide-download" class="w-4 h-4 mr-1" />
+                    Télécharger
+                  </UButton>
                 </div>
               </div>
-            </div>
 
-            <!-- Preview iframe -->
-            <div class="mt-4">
-              <h3 class="text-sm font-medium text-gray-400 mb-2">Preview</h3>
-              <iframe
-                :srcdoc="generatedHtml"
-                class="w-full h-96 rounded-lg border border-gray-700"
-              />
-            </div>
-
-          </div>
-        </UCard>
-
-        <!-- Placeholder si pas de résultat -->
-        <UCard v-else class="flex items-center justify-center min-h-[400px]">
-          <div class="text-center text-gray-500">
-            <div class="text-4xl mb-4">📊</div>
-            <p>Votre présentation apparaîtra ici</p>
-          </div>
-        </UCard>
-      </div>
-
-      <!-- Présentations existantes -->
-      <UCard v-if="presentations?.length" class="mt-6">
-        <template #header>
-          <h2 class="text-lg font-semibold text-white">
-            Présentations générées ({{ presentations?.length || 0 }})
-          </h2>
-        </template>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div
-            v-for="pres in presentations"
-            :key="pres.filename"
-            class="p-3 bg-gray-800 rounded-lg group"
-          >
-            <a
-              :href="pres.url"
-              target="_blank"
-              class="block font-medium text-white hover:text-blue-400 truncate"
-            >
-              {{ pres.title }}
-            </a>
-            <div class="text-xs text-gray-500 mt-1 flex justify-between items-center">
-              <span>{{ pres.date }}</span>
-              <div class="flex items-center gap-2">
-                <span>{{ formatSize(pres.size) }}</span>
-                <UButton
-                  size="xs"
-                  variant="ghost"
-                  color="primary"
-                  icon="i-lucide-pencil"
-                  @click="openImproveModal(pres)"
+              <div class="p-4">
+                <iframe
+                  :srcdoc="generatedHtml"
+                  class="w-full h-72 rounded-lg border border-muted-200"
                 />
               </div>
             </div>
           </div>
         </div>
-      </UCard>
+
+        <!-- Sidebar droite : Présentations existantes -->
+        <aside v-if="presentations?.length" class="w-full lg:w-80 flex-shrink-0">
+          <div class="bg-white rounded-xl border border-muted-200 shadow-sm overflow-hidden lg:sticky lg:top-24">
+            <div class="px-4 py-3 border-b border-muted-100 bg-muted-50/50 flex items-center justify-between">
+              <h2 class="font-semibold text-muted-900">Présentations</h2>
+              <span class="text-xs text-muted-500 bg-muted-100 px-2 py-0.5 rounded-full">
+                {{ presentations?.length }}
+              </span>
+            </div>
+
+            <div class="divide-y divide-muted-100 max-h-[calc(100vh-12rem)] overflow-y-auto">
+              <div
+                v-for="pres in presentations"
+                :key="pres.filename"
+                class="p-3 hover:bg-muted-50 transition-colors group"
+              >
+                <a
+                  :href="pres.url"
+                  target="_blank"
+                  class="block font-medium text-sm text-muted-900 hover:text-accent truncate"
+                >
+                  {{ pres.title }}
+                </a>
+                <div class="text-xs text-muted-400 mt-1 flex justify-between items-center">
+                  <span>{{ pres.date }}</span>
+                  <div class="flex items-center gap-1">
+                    <span class="text-muted-300">{{ formatSize(pres.size) }}</span>
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      icon="i-lucide-pencil"
+                      :to="`/editor/${pres.filename}`"
+                      class="opacity-0 group-hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-gray-800 py-4 mt-8">
+    <footer class="border-t border-muted-200 bg-white py-6 mt-12">
       <div class="max-w-7xl mx-auto px-6 text-center">
-        <p class="text-gray-600 text-sm">
-          <span class="text-primary font-semibold">PREZ</span> v1.0.0 — Générateur de présentations avec IA
+        <p class="text-muted-500 text-sm">
+          <span class="text-accent font-semibold">PREZ</span> — Générateur de présentations pédagogiques avec IA
         </p>
       </div>
     </footer>
@@ -606,15 +610,15 @@ function logout() {
     <!-- Modal de progression -->
     <UModal v-model:open="showProgressModal" :dismissible="false">
       <template #content>
-        <div class="p-6">
+        <div class="p-6 bg-white rounded-xl">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                <UIcon name="i-lucide-sparkles" class="w-5 h-5 text-primary animate-pulse" />
+              <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
+                <UIcon name="i-lucide-sparkles" class="w-6 h-6 text-accent animate-pulse" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-white">Génération en cours</h3>
-                <p class="text-sm text-gray-400">L'IA travaille sur votre présentation...</p>
+                <h3 class="text-lg font-semibold text-muted-900">Génération en cours</h3>
+                <p class="text-sm text-muted-500">L'IA travaille sur votre présentation...</p>
               </div>
             </div>
             <UButton
@@ -632,28 +636,28 @@ function logout() {
           <!-- Barre de progression globale -->
           <div class="mb-6">
             <div class="flex justify-between text-sm mb-2">
-              <span class="text-gray-400">Progression</span>
-              <span class="text-primary font-medium">{{ progressPercent }}%</span>
+              <span class="text-muted-500">Progression</span>
+              <span class="text-accent font-semibold">{{ progressPercent }}%</span>
             </div>
-            <div class="w-full bg-gray-700 rounded-full h-2">
+            <div class="w-full bg-muted-100 rounded-full h-2">
               <div
-                class="bg-primary h-2 rounded-full transition-all duration-500"
+                class="bg-accent h-2 rounded-full transition-all duration-500"
                 :style="{ width: `${progressPercent}%` }"
               />
             </div>
           </div>
 
           <!-- Liste des étapes -->
-          <div class="space-y-3">
+          <div class="space-y-2">
             <div
               v-for="(step, index) in progressSteps"
               :key="step.id"
               class="flex items-center gap-3 p-3 rounded-lg transition-colors"
               :class="{
-                'bg-gray-800/50': step.status === 'pending',
-                'bg-primary/10 border border-primary/30': step.status === 'active',
-                'bg-green-500/10': step.status === 'done',
-                'bg-red-500/10': step.status === 'error'
+                'bg-muted-50': step.status === 'pending',
+                'bg-accent/5 border border-accent/20': step.status === 'active',
+                'bg-green-50': step.status === 'done',
+                'bg-red-50': step.status === 'error'
               }"
             >
               <!-- Icône de statut -->
@@ -661,22 +665,22 @@ function logout() {
                 <UIcon
                   v-if="step.status === 'pending'"
                   name="i-lucide-circle"
-                  class="w-5 h-5 text-gray-500"
+                  class="w-5 h-5 text-muted-300"
                 />
                 <UIcon
                   v-else-if="step.status === 'active'"
                   name="i-lucide-loader-2"
-                  class="w-5 h-5 text-primary animate-spin"
+                  class="w-5 h-5 text-accent animate-spin"
                 />
                 <UIcon
                   v-else-if="step.status === 'done'"
                   name="i-lucide-check-circle"
-                  class="w-5 h-5 text-green-400"
+                  class="w-5 h-5 text-green-600"
                 />
                 <UIcon
                   v-else-if="step.status === 'error'"
                   name="i-lucide-x-circle"
-                  class="w-5 h-5 text-red-400"
+                  class="w-5 h-5 text-red-600"
                 />
               </div>
 
@@ -685,10 +689,10 @@ function logout() {
                 <span
                   class="text-sm font-medium"
                   :class="{
-                    'text-gray-500': step.status === 'pending',
-                    'text-white': step.status === 'active',
-                    'text-green-400': step.status === 'done',
-                    'text-red-400': step.status === 'error'
+                    'text-muted-400': step.status === 'pending',
+                    'text-accent': step.status === 'active',
+                    'text-green-700': step.status === 'done',
+                    'text-red-700': step.status === 'error'
                   }"
                 >
                   {{ index + 1 }}. {{ step.label }}
@@ -712,14 +716,14 @@ function logout() {
     <!-- Modal d'amélioration -->
     <UModal v-model:open="showImproveModal">
       <template #content>
-        <div class="p-6">
+        <div class="p-6 bg-white rounded-xl">
           <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-              <UIcon name="i-lucide-pencil" class="w-5 h-5 text-primary" />
+            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center">
+              <UIcon name="i-lucide-pencil" class="w-6 h-6 text-accent" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-white">Améliorer la présentation</h3>
-              <p class="text-sm text-gray-400">{{ improvingPresentation?.title }}</p>
+              <h3 class="text-lg font-semibold text-muted-900">Améliorer la présentation</h3>
+              <p class="text-sm text-muted-500">{{ improvingPresentation?.title }}</p>
             </div>
           </div>
 
@@ -743,16 +747,17 @@ function logout() {
           <div class="flex justify-end gap-3">
             <UButton
               variant="ghost"
+              color="neutral"
               @click="showImproveModal = false"
               :disabled="improveLoading"
             >
               Annuler
             </UButton>
             <UButton
-              color="primary"
               :loading="improveLoading"
               :disabled="!improveInstructions.trim() || !apiKey"
               @click="improvePresentation"
+              class="!bg-accent hover:!bg-accent-700"
             >
               <UIcon name="i-lucide-sparkles" class="w-4 h-4 mr-1" />
               Améliorer
