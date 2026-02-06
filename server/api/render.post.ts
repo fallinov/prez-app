@@ -4,6 +4,33 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import type { Slide } from '~/types'
 
+const VISUAL_REVIEW_PROMPT = `Tu es un expert UX/UI qui analyse visuellement des présentations pédagogiques.
+
+Analyse ce screenshot et identifie les problèmes visuels :
+
+# VÉRIFICATIONS VISUELLES
+1. **Lisibilité** : Le texte est-il facilement lisible ? Taille suffisante ?
+2. **Contrastes** : Les couleurs offrent-elles un bon contraste ?
+3. **Hiérarchie visuelle** : Les titres se distinguent-ils du contenu ?
+4. **Équilibre** : La slide est-elle bien équilibrée ou surchargée ?
+5. **Espacements** : Y a-t-il assez d'espace entre les éléments ?
+6. **Alignements** : Les éléments sont-ils bien alignés ?
+7. **Cohérence** : Le style est-il cohérent ?
+
+# FORMAT DE RÉPONSE
+Retourne un JSON avec cette structure :
+{
+  "score": 8,  // Score sur 10
+  "issues": [
+    { "type": "contrast", "severity": "warning", "message": "Le texte gris clair manque de contraste" },
+    { "type": "spacing", "severity": "info", "message": "Espacement un peu serré entre les cartes" }
+  ],
+  "summary": "Bonne présentation globalement, quelques ajustements mineurs recommandés."
+}
+
+Severities: "error" (critique), "warning" (important), "info" (suggestion)
+Types: "contrast", "spacing", "alignment", "hierarchy", "readability", "balance", "consistency"`
+
 const HTML_REVIEW_PROMPT = `Tu es un expert en HTML/CSS, UX et accessibilité pour présentations pédagogiques.
 
 # VÉRIFICATIONS TECHNIQUES
@@ -30,14 +57,30 @@ RÈGLES :
 - Ne modifie JAMAIS le contenu textuel, seulement les problèmes techniques
 - Conserve toute la structure, les classes et les styles`
 
+// Configuration htmlcsstoimage.com (optionnel)
+const HCTI_USER_ID = process.env.HCTI_USER_ID
+const HCTI_API_KEY = process.env.HCTI_API_KEY
+
+interface VisualReviewResult {
+  score: number
+  issues: Array<{
+    type: string
+    severity: 'error' | 'warning' | 'info'
+    message: string
+  }>
+  summary: string
+  screenshotUrl?: string
+}
+
 export default defineEventHandler(async (event) => {
-  const { slides, baseColor, title, apiKey, model } = await readBody<{
+  const { slides, baseColor, title, apiKey, model, enableVisualReview } = await readBody<{
     slides: Slide[]
     baseColor: string
     title: string
     markdown?: string
     apiKey?: string
     model?: string
+    enableVisualReview?: boolean
   }>(event)
 
   if (!slides || !slides.length) {
@@ -105,7 +148,85 @@ export default defineEventHandler(async (event) => {
     const url = `/generated/${filename}`
     console.log(`✅ Présentation sauvegardée: ${url}`)
 
-    return { html, url, filename }
+    // Étape 4 : Revue visuelle (si activée et configurée)
+    let visualReview: VisualReviewResult | null = null
+    if (enableVisualReview && apiKey && HCTI_USER_ID && HCTI_API_KEY) {
+      try {
+        console.log('📸 Capture screenshot en cours...')
+
+        // Générer un screenshot via htmlcsstoimage.com
+        const screenshotResponse = await fetch('https://hcti.io/v1/image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + Buffer.from(`${HCTI_USER_ID}:${HCTI_API_KEY}`).toString('base64')
+          },
+          body: JSON.stringify({
+            html: html,
+            css: '',
+            viewport_width: 1280,
+            viewport_height: 720
+          })
+        })
+
+        if (screenshotResponse.ok) {
+          const { url: screenshotUrl } = await screenshotResponse.json() as { url: string }
+          console.log(`📸 Screenshot généré: ${screenshotUrl}`)
+
+          // Télécharger l'image pour l'envoyer à Claude
+          const imageResponse = await fetch(screenshotUrl)
+          const imageBuffer = await imageResponse.arrayBuffer()
+          const base64Image = Buffer.from(imageBuffer).toString('base64')
+
+          console.log('🔍 Analyse visuelle en cours...')
+          const anthropic = new Anthropic({ apiKey })
+
+          const reviewResponse = await anthropic.messages.create({
+            model: 'claude-3-5-haiku-20241022',
+            max_tokens: 2048,
+            system: VISUAL_REVIEW_PROMPT,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: 'image/png',
+                      data: base64Image
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: 'Analyse cette slide de présentation et retourne le JSON demandé.'
+                  }
+                ]
+              }
+            ]
+          })
+
+          const reviewText = reviewResponse.content
+            .filter(block => block.type === 'text')
+            .map(block => (block as { type: 'text'; text: string }).text)
+            .join('')
+
+          // Parser le JSON de la réponse
+          const jsonMatch = reviewText.match(/\{[\s\S]*\}/)
+          if (jsonMatch) {
+            visualReview = JSON.parse(jsonMatch[0]) as VisualReviewResult
+            visualReview.screenshotUrl = screenshotUrl
+            console.log(`✅ Revue visuelle: Score ${visualReview.score}/10`)
+          }
+        } else {
+          console.log('⚠️ Échec capture screenshot:', await screenshotResponse.text())
+        }
+      } catch (visualError: any) {
+        console.log('⚠️ Revue visuelle ignorée:', visualError.message || 'Erreur inconnue')
+      }
+    }
+
+    return { html, url, filename, visualReview }
   } catch (error: any) {
     console.error('Erreur rendu:', error)
     throw createError({
