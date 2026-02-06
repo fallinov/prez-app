@@ -98,6 +98,7 @@ const progressSteps = ref<ProgressStep[]>([
   { id: 'generate', label: 'Génération du contenu', status: 'pending' },
   { id: 'review', label: 'Relecture et amélioration', status: 'pending' },
   { id: 'render', label: 'Création du HTML', status: 'pending' },
+  { id: 'ux-review', label: 'Revue UX et accessibilité', status: 'pending' },
   { id: 'save', label: 'Sauvegarde', status: 'pending' }
 ])
 
@@ -208,22 +209,36 @@ async function generatePresentation() {
 
     // Étape 3 : Création du HTML
     setStepStatus('render', 'active')
-    const htmlResponse = await $fetch('/api/render', {
+
+    // L'API fait render + revue UX, on simule la transition après 1s
+    const renderPromise = $fetch('/api/render', {
       method: 'POST',
       body: {
         markdown: generatedMarkdown.value,
         slides: slides.value,
         baseColor: baseColor.value,
-        title: title.value || slides.value[0]?.title || 'Présentation'
+        title: title.value || slides.value[0]?.title || 'Présentation',
+        apiKey: apiKey.value
       }
     })
 
+    // Après 1s, passer à l'étape revue UX
+    setTimeout(() => {
+      if (loading.value) {
+        setStepStatus('render', 'done')
+        setStepStatus('ux-review', 'active')
+      }
+    }, 1000)
+
+    const htmlResponse = await renderPromise
+
     setStepStatus('render', 'done')
+    setStepStatus('ux-review', 'done')
 
     generatedHtml.value = htmlResponse.html
     generatedUrl.value = htmlResponse.url
 
-    // Étape 4 : Sauvegarde
+    // Étape 5 : Sauvegarde
     setStepStatus('save', 'active')
     await loadPresentations()
     setStepStatus('save', 'done')
