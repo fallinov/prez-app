@@ -157,11 +157,6 @@ export function renderPresentation(options: RenderOptions): string {
         }
         .gradient-accent { background: linear-gradient(135deg, ${palette.accent} 0%, ${palette.accentDark} 100%); }
 
-        /* Accent text sur hero slide - meilleur contraste */
-        .hero-accent {
-            text-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 40px rgba(255,255,255,0.3);
-            filter: brightness(1.3) contrast(1.1);
-        }
 
         /* Code blocks */
         .code-block {
@@ -961,9 +956,8 @@ function extractSectionLabel(title: string): string {
  */
 function formatTitle(title: string): string {
   let result = escapeHtml(title)
-  // Remplacer **mot** par <span class="text-accent hero-accent">mot</span>
-  // hero-accent ajoute une ombre pour le contraste sur les fonds gradient
-  result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-accent hero-accent">$1</span>')
+  // Remplacer **mot** par <span class="text-accent">mot</span>
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-accent">$1</span>')
   return result
 }
 

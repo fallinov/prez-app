@@ -136,16 +136,28 @@ Dans WordPress : Médiathèque → Champ "Texte alternatif"
 - \`:::video https://youtube.com/watch?v=xxx:::\` — Vidéo YouTube/Vimeo
 
 ## Images et médias
-IMPORTANT : Utilise UNIQUEMENT le bloc \`:::image\` pour les images, JAMAIS de balises HTML <img>.
+IMPORTANT : Les images sont OPTIONNELLES. Privilégie les icônes, cartes et texte stylisé.
+
+QUAND utiliser une image :
+- Paysages, lieux, objets physiques concrets
+- Maximum 1 image par présentation
+
+QUAND NE PAS utiliser d'image :
+- Concepts techniques (compression, SEO, code, interfaces)
+- Processus abstraits
+- Tout ce qui est mieux représenté par des icônes ou du texte
+
+Si tu utilises une image :
 \`\`\`
-:::image landscape mountain switzerland
-Vue panoramique des Alpes
+:::image mountain lake
+Paysage alpin
 :::
 \`\`\`
-- Mots-clés EN ANGLAIS (ex: "paris eiffel tower night", "wordpress dashboard", "computer code")
-- Légende descriptive en français sur la ligne suivante
-- Maximum 2-3 images par présentation
-- Place les images après un paragraphe d'introduction, pas en début de slide
+- Maximum 2 mots-clés SIMPLES en anglais
+- Mots communs : nature, city, office, computer, people, food, car
+- ÉVITER : descriptions longues, termes techniques, adjectifs multiples
+- Exemples BONS : "mountain lake", "office desk", "city night"
+- Exemples MAUVAIS : "compression interface showing optimization", "wordpress media library"
 
 ## Liens externes (OBLIGATOIRE)
 TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
@@ -174,6 +186,7 @@ TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
 4. **Concret** : exemples réels (noms fichiers, chiffres, code)
 5. **Équilibré** : chaque slide a assez de contenu sans surcharger
 6. **Varié** : ne pas répéter le même layout 2 fois de suite
+7. **Slide finale** : TOUJOURS terminer par un récapitulatif/checklist avec :::steps
 
 # EXEMPLE DE PRÉSENTATION COMPLÈTE
 
