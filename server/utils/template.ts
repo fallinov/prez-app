@@ -713,7 +713,6 @@ function renderCompareBlock(content: string): string {
 
   return `
     <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-8">
-        <h3 class="text-lg font-bold mb-4">Comparaison de poids</h3>
         <div class="space-y-4">${bars.join('')}</div>
     </div>`
 }
@@ -871,8 +870,8 @@ function renderImageBlock(source: string, caption: string): string {
 
   return `
     <figure class="mb-8">
-        <div class="rounded-2xl overflow-hidden shadow-lg">
-            <img src="${imageUrl}" alt="${escapeHtml(altText)}" class="w-full h-auto object-cover max-h-96" loading="lazy" />
+        <div class="rounded-2xl overflow-hidden shadow-lg bg-slate-900 flex items-center justify-center">
+            <img src="${imageUrl}" alt="${escapeHtml(altText)}" class="max-w-full max-h-80 object-contain" loading="lazy" />
         </div>
         ${captionHtml}
     </figure>`
