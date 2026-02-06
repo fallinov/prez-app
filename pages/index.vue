@@ -292,7 +292,7 @@ function logout() {
 
           <div class="space-y-4">
             <div class="flex items-center justify-between text-sm text-gray-400">
-              <span>{{ slides.length }} slides générées</span>
+              <span>{{ slides?.length || 0 }} slides générées</span>
               <code v-if="generatedUrl" class="text-xs bg-gray-800 px-2 py-1 rounded">
                 {{ generatedUrl }}
               </code>
@@ -335,10 +335,10 @@ function logout() {
       </div>
 
       <!-- Présentations existantes -->
-      <UCard v-if="presentations.length" class="mt-6">
+      <UCard v-if="presentations?.length" class="mt-6">
         <template #header>
           <h2 class="text-lg font-semibold text-white">
-            Présentations générées ({{ presentations.length }})
+            Présentations générées ({{ presentations?.length || 0 }})
           </h2>
         </template>
 
