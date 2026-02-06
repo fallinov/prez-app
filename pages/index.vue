@@ -140,6 +140,72 @@ const generatedHtml = ref('')
 const generatedUrl = ref('')
 const slides = ref<Slide[]>([])
 
+// Modal d'amélioration
+const showImproveModal = ref(false)
+const improveInstructions = ref('')
+const improvingPresentation = ref<PresentationFile | null>(null)
+const improveLoading = ref(false)
+const improveError = ref('')
+
+function openImproveModal(pres: PresentationFile) {
+  improvingPresentation.value = pres
+  improveInstructions.value = ''
+  improveError.value = ''
+  showImproveModal.value = true
+}
+
+async function improvePresentation() {
+  if (!improvingPresentation.value || !improveInstructions.value.trim() || !apiKey.value) {
+    improveError.value = 'Instructions et clé API requises'
+    return
+  }
+
+  improveLoading.value = true
+  improveError.value = ''
+
+  try {
+    // Étape 1 : Modifier le Markdown
+    const improveResponse = await $fetch('/api/improve', {
+      method: 'POST',
+      body: {
+        filename: improvingPresentation.value.filename,
+        instructions: improveInstructions.value,
+        apiKey: apiKey.value,
+        model: selectedModel.value
+      }
+    })
+
+    // Étape 2 : Re-render avec le pipeline existant
+    const renderResponse = await $fetch('/api/render', {
+      method: 'POST',
+      body: {
+        markdown: improveResponse.markdown,
+        slides: improveResponse.slides,
+        baseColor: improveResponse.baseColor,
+        title: improveResponse.title,
+        apiKey: apiKey.value,
+        palette: improveResponse.palette,
+        model: improveResponse.model
+      }
+    })
+
+    // Mettre à jour les résultats
+    generatedMarkdown.value = improveResponse.markdown
+    slides.value = improveResponse.slides
+    generatedHtml.value = renderResponse.html
+    generatedUrl.value = renderResponse.url
+
+    // Fermer le modal et recharger la liste
+    showImproveModal.value = false
+    await loadPresentations()
+
+  } catch (e: any) {
+    improveError.value = e.data?.message || 'Erreur lors de l\'amélioration'
+    console.error(e)
+  } finally {
+    improveLoading.value = false
+  }
+}
 
 // Charger les présentations
 async function loadPresentations() {
@@ -240,7 +306,8 @@ async function generatePresentation() {
         baseColor: baseColor.value,
         title: title.value || slides.value[0]?.title || 'Présentation',
         apiKey: apiKey.value,
-        palette: generatedPalette.value
+        palette: generatedPalette.value,
+        model: selectedModel.value
       }
     })
 
@@ -497,21 +564,32 @@ function logout() {
         </template>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <a
+          <div
             v-for="pres in presentations"
             :key="pres.filename"
-            :href="pres.url"
-            target="_blank"
-            class="p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors group"
+            class="p-3 bg-gray-800 rounded-lg group"
           >
-            <div class="font-medium text-white group-hover:text-blue-400 truncate">
+            <a
+              :href="pres.url"
+              target="_blank"
+              class="block font-medium text-white hover:text-blue-400 truncate"
+            >
               {{ pres.title }}
-            </div>
-            <div class="text-xs text-gray-500 mt-1 flex justify-between">
+            </a>
+            <div class="text-xs text-gray-500 mt-1 flex justify-between items-center">
               <span>{{ pres.date }}</span>
-              <span>{{ formatSize(pres.size) }}</span>
+              <div class="flex items-center gap-2">
+                <span>{{ formatSize(pres.size) }}</span>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  color="primary"
+                  icon="i-lucide-pencil"
+                  @click="openImproveModal(pres)"
+                />
+              </div>
             </div>
-          </a>
+          </div>
         </div>
       </UCard>
     </main>
@@ -627,6 +705,59 @@ function logout() {
             variant="subtle"
             class="mt-4"
           />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Modal d'amélioration -->
+    <UModal v-model:open="showImproveModal">
+      <template #content>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+              <UIcon name="i-lucide-pencil" class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white">Améliorer la présentation</h3>
+              <p class="text-sm text-gray-400">{{ improvingPresentation?.title }}</p>
+            </div>
+          </div>
+
+          <UFormField label="Instructions de modification" class="mb-4">
+            <UTextarea
+              v-model="improveInstructions"
+              :rows="5"
+              placeholder="Ex: Ajoute une slide sur les formats AVIF, corrige l'orthographe, simplifie la slide 3..."
+              :disabled="improveLoading"
+            />
+          </UFormField>
+
+          <UAlert
+            v-if="improveError"
+            color="error"
+            :title="improveError"
+            variant="subtle"
+            class="mb-4"
+          />
+
+          <div class="flex justify-end gap-3">
+            <UButton
+              variant="ghost"
+              @click="showImproveModal = false"
+              :disabled="improveLoading"
+            >
+              Annuler
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="improveLoading"
+              :disabled="!improveInstructions.trim() || !apiKey"
+              @click="improvePresentation"
+            >
+              <UIcon name="i-lucide-sparkles" class="w-4 h-4 mr-1" />
+              Améliorer
+            </UButton>
+          </div>
         </div>
       </template>
     </UModal>

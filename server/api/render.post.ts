@@ -65,14 +65,25 @@ interface GeneratedPalette {
   textHighlight: string
 }
 
+// Metadata sauvegardée avec chaque présentation
+interface PresentationMetadata {
+  title: string
+  markdown: string
+  baseColor: string
+  palette: GeneratedPalette | null
+  model: string
+  createdAt: string
+}
+
 export default defineEventHandler(async (event) => {
-  const { slides, baseColor, title, apiKey, palette } = await readBody<{
+  const { slides, baseColor, title, apiKey, palette, markdown, model } = await readBody<{
     slides: Slide[]
     baseColor: string
     title: string
     markdown?: string
     apiKey?: string
     palette?: GeneratedPalette
+    model?: string
   }>(event)
 
   if (!slides || !slides.length) {
@@ -137,6 +148,18 @@ export default defineEventHandler(async (event) => {
 
     const filepath = join(publicDir, filename)
     await writeFile(filepath, html, 'utf-8')
+
+    // Sauvegarder les metadata JSON (pour modifications futures)
+    const metadataFilename = filename.replace('.html', '.json')
+    const metadata: PresentationMetadata = {
+      title: title || 'Présentation',
+      markdown: markdown || '',
+      baseColor: baseColor || '#0073aa',
+      palette: palette || null,
+      model: model || 'claude-sonnet-4-20250514',
+      createdAt: new Date().toISOString()
+    }
+    await writeFile(join(publicDir, metadataFilename), JSON.stringify(metadata, null, 2), 'utf-8')
 
     const url = `/generated/${filename}`
     console.log(`✅ Présentation sauvegardée: ${url}`)
