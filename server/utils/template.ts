@@ -819,7 +819,10 @@ function renderPointsBlock(content: string): string {
  */
 function renderTipBlock(content: string): string {
   // Supprimer emoji de début si présent (on va le remplacer par une icône)
-  const cleanContent = content.replace(/^[✨💡🎯⭐]\s*/, '')
+  // Trim d'abord, puis regex pour capturer emojis courants au début
+  let cleanContent = content.trim()
+  // Supprimer les emojis de début (sparkles, lightbulb, target, star, rocket, etc.)
+  cleanContent = cleanContent.replace(/^(✨|💡|🎯|⭐|🚀|✅|⚡|🔥)\s*/g, '')
 
   return `
     <div class="bg-accent/10 border border-accent/30 p-4 rounded-2xl mt-6 mb-8 flex items-start gap-3">
