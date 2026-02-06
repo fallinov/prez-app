@@ -136,15 +136,22 @@ Dans WordPress : Médiathèque → Champ "Texte alternatif"
 - \`:::video https://youtube.com/watch?v=xxx:::\` — Vidéo YouTube/Vimeo
 
 ## Images et médias
-Utilise \`:::image\` pour illustrer les slides quand c'est pertinent :
+IMPORTANT : Utilise UNIQUEMENT le bloc \`:::image\` pour les images, JAMAIS de balises HTML <img>.
 \`\`\`
-:::image paysage montagne suisse
+:::image landscape mountain switzerland
 Vue panoramique des Alpes
 :::
 \`\`\`
-- Choisis des mots-clés en anglais pour de meilleurs résultats Unsplash
-- Ajoute une légende descriptive sur la ligne suivante
-- N'abuse pas : 2-3 images max par présentation
+- Mots-clés EN ANGLAIS pour Unsplash (ex: "paris eiffel tower night", "wordpress dashboard")
+- Légende descriptive en français sur la ligne suivante
+- Maximum 2-3 images par présentation
+- Place les images après un paragraphe d'introduction, pas en début de slide
+
+## Liens externes
+Ajoute des liens vers les outils, sites et applications mentionnés :
+- Format Markdown : \`[Nom de l'outil](https://url.com)\`
+- Exemples : \`[TinyPNG](https://tinypng.com)\`, \`[Squoosh](https://squoosh.app)\`
+- Liens pertinents uniquement (outils, docs officielles, ressources utiles)
 
 ## Cartes avec couleurs
 \`[TITRE|couleur]\` où couleur = yellow, blue, green, red, purple, orange, accent
