@@ -1,11 +1,21 @@
 import type { Slide } from '~/types'
 import { generatePalette } from './palette'
 
+// Palette générée par l'IA avec contrastes WCAG AAA
+interface GeneratedPalette {
+  accent: string
+  accentContrast: string
+  accentLight: string
+  accentDark: string
+  textHighlight: string
+}
+
 interface RenderOptions {
   title: string
   slides: Slide[]
   baseColor: string
   mode?: 'dark' | 'light'
+  palette?: GeneratedPalette
 }
 
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string; badge: string }> = {
@@ -106,8 +116,20 @@ function lucideIcon(name: string, className: string = 'w-5 h-5'): string {
  * Génère le HTML complet de la présentation
  */
 export function renderPresentation(options: RenderOptions): string {
-  const { title, slides, baseColor, mode = 'dark' } = options
-  const palette = generatePalette(baseColor, mode)
+  const { title, slides, baseColor, mode = 'dark', palette: aiPalette } = options
+
+  // Utiliser la palette IA si fournie, sinon générer une palette de base
+  const basePalette = generatePalette(baseColor, mode)
+  const palette = {
+    ...basePalette,
+    // Couleurs IA prioritaires
+    accent: aiPalette?.accent || basePalette.accent,
+    accentLight: aiPalette?.accentLight || basePalette.accentLight,
+    accentDark: aiPalette?.accentDark || basePalette.accentDark,
+    // Nouvelles couleurs WCAG
+    accentContrast: aiPalette?.accentContrast || '#ffffff',
+    textHighlight: aiPalette?.textHighlight || '#fbbf24'
+  }
 
   const slidesHtml = slides.map((slide, index) => renderSlide(slide, index, palette, slides.length)).join('\n')
   const navDotsHtml = slides.map((_, i) => `
@@ -137,6 +159,8 @@ export function renderPresentation(options: RenderOptions): string {
                         accent: '${palette.accent}',
                         accentLight: '${palette.accentLight}',
                         accentDark: '${palette.accentDark}',
+                        accentContrast: '${palette.accentContrast}',
+                        textHighlight: '${palette.textHighlight}',
                     }
                 }
             }
@@ -964,12 +988,12 @@ function formatTitle(title: string): string {
 }
 
 /**
- * Formate le titre hero avec couleur contrastante (jaune sur fond accent)
+ * Formate le titre hero avec couleur contrastante (textHighlight sur fond accent)
  */
 function formatHeroTitle(title: string): string {
   let result = escapeHtml(title)
-  // Sur fond accent, utiliser jaune clair pour les mots en gras
-  result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-yellow-300">$1</span>')
+  // Sur fond accent, utiliser textHighlight (généré par IA avec contraste WCAG AAA)
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<span class="text-textHighlight">$1</span>')
   return result
 }
 

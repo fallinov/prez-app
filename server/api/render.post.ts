@@ -50,13 +50,23 @@ Ces présentations sont affichées sur vidéoprojecteur dans des salles éclair�
 - Ne supprime RIEN, corrige seulement
 - Si tout est correct, retourne le HTML identique`
 
+// Interface pour la palette générée par l'IA
+interface GeneratedPalette {
+  accent: string
+  accentContrast: string
+  accentLight: string
+  accentDark: string
+  textHighlight: string
+}
+
 export default defineEventHandler(async (event) => {
-  const { slides, baseColor, title, apiKey } = await readBody<{
+  const { slides, baseColor, title, apiKey, palette } = await readBody<{
     slides: Slide[]
     baseColor: string
     title: string
     markdown?: string
     apiKey?: string
+    palette?: GeneratedPalette
   }>(event)
 
   if (!slides || !slides.length) {
@@ -71,7 +81,8 @@ export default defineEventHandler(async (event) => {
       title: title || 'Présentation',
       slides,
       baseColor: baseColor || '#0073aa',
-      mode: 'dark'
+      mode: 'dark',
+      palette: palette || undefined
     })
 
     // Étape 3 : Revue HTML par l'IA (si clé API fournie)

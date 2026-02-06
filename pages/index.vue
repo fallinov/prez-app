@@ -95,12 +95,23 @@ interface ProgressStep {
 
 const showProgressModal = ref(false)
 const progressSteps = ref<ProgressStep[]>([
+  { id: 'palette', label: 'Génération de la palette WCAG', status: 'pending' },
   { id: 'generate', label: 'Génération du contenu', status: 'pending' },
   { id: 'review', label: 'Relecture et amélioration', status: 'pending' },
   { id: 'render', label: 'Création du HTML', status: 'pending' },
   { id: 'ux-review', label: 'Revue UX et accessibilité', status: 'pending' },
   { id: 'save', label: 'Sauvegarde', status: 'pending' }
 ])
+
+// Palette générée par l'IA
+interface GeneratedPalette {
+  accent: string
+  accentContrast: string
+  accentLight: string
+  accentDark: string
+  textHighlight: string
+}
+const generatedPalette = ref<GeneratedPalette | null>(null)
 
 const currentStepIndex = computed(() => {
   const activeIndex = progressSteps.value.findIndex(s => s.status === 'active')
@@ -177,41 +188,50 @@ async function generatePresentation() {
 
   try {
     // Étape 1 : Génération du contenu
-    setStepStatus('generate', 'active')
+    // Étape 1 : Génération palette + contenu (l'API fait palette → génération → relecture)
+    setStepStatus('palette', 'active')
 
-    // Simuler la progression entre génération et relecture
-    // (l'API fait les 2 en une seule requête)
     const generatePromise = $fetch('/api/generate', {
       method: 'POST',
       body: {
         prompt: prompt.value,
         apiKey: apiKey.value,
         title: title.value || 'Présentation',
-        model: selectedModel.value
+        model: selectedModel.value,
+        baseColor: baseColor.value
       },
       signal: abortController.value.signal
     })
 
-    // Après 3 secondes, passer à l'étape de relecture (estimation)
+    // Progression simulée : palette (1s) → génération (2s) → relecture
+    setTimeout(() => {
+      if (loading.value) {
+        setStepStatus('palette', 'done')
+        setStepStatus('generate', 'active')
+      }
+    }, 1000)
+
     setTimeout(() => {
       if (loading.value) {
         setStepStatus('generate', 'done')
         setStepStatus('review', 'active')
       }
-    }, 3000)
+    }, 4000)
 
     const mdResponse = await generatePromise
 
+    setStepStatus('palette', 'done')
     setStepStatus('generate', 'done')
     setStepStatus('review', 'done')
 
     generatedMarkdown.value = mdResponse.markdown
     slides.value = mdResponse.slides
+    generatedPalette.value = mdResponse.palette || null
 
-    // Étape 3 : Création du HTML
+    // Étape 4 : Création du HTML
     setStepStatus('render', 'active')
 
-    // L'API fait render + revue UX
+    // L'API fait render + revue UX (avec la palette générée)
     const renderPromise = $fetch('/api/render', {
       method: 'POST',
       body: {
@@ -219,7 +239,8 @@ async function generatePresentation() {
         slides: slides.value,
         baseColor: baseColor.value,
         title: title.value || slides.value[0]?.title || 'Présentation',
-        apiKey: apiKey.value
+        apiKey: apiKey.value,
+        palette: generatedPalette.value
       }
     })
 

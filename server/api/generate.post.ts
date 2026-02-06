@@ -253,6 +253,37 @@ Optimisée (1800px + compression)|180 Ko|2%|green
 
 GÉNÈRE MAINTENANT LA PRÉSENTATION DEMANDÉE EN UTILISANT CES PATTERNS.`
 
+const PALETTE_PROMPT = `Tu es un expert en design système et accessibilité WCAG.
+
+# MISSION
+Générer une palette de 5 couleurs pour une présentation pédagogique, garantissant des contrastes WCAG AAA.
+
+# COULEURS À DÉFINIR
+
+1. **accent** : Couleur principale (basée sur l'input, ajustée si nécessaire pour être utilisable)
+2. **accentContrast** : Couleur de texte lisible SUR un fond accent (pour slide hero)
+3. **accentLight** : Version plus claire de l'accent (+15-20% luminosité)
+4. **accentDark** : Version plus sombre de l'accent (-15-20% luminosité)
+5. **textHighlight** : Couleur pour les mots mis en évidence sur fond sombre (#0f172a)
+
+# CONTRAINTES WCAG AAA (CRITIQUES)
+
+- **accentContrast vs accent** : ratio ≥ 7:1 (texte sur fond accent)
+- **textHighlight vs #0f172a** : ratio ≥ 7:1 (texte sur slate-900)
+- **textHighlight vs #1e293b** : ratio ≥ 4.5:1 (texte sur slate-800)
+
+# RÈGLES DE CHOIX
+
+- Si accent est saturé/sombre → accentContrast = blanc (#ffffff) ou jaune très clair (#fef3c7)
+- Si accent est clair → accentContrast = noir (#000000) ou bleu très foncé
+- textHighlight doit être une couleur vive qui ressort : jaune (#fbbf24), cyan (#22d3d8), rose (#f472b6), vert (#4ade80)
+- Éviter les gris pour textHighlight (pas assez de punch visuel)
+
+# FORMAT DE SORTIE
+
+Retourne UNIQUEMENT un JSON valide, sans markdown, sans explication :
+{"accent":"#...","accentContrast":"#...","accentLight":"#...","accentDark":"#...","textHighlight":"#..."}`
+
 const REVIEW_PROMPT = `Tu es un relecteur expert de présentations pédagogiques.
 
 # TA MISSION
@@ -281,8 +312,17 @@ const VALID_MODELS = [
   'claude-3-5-haiku-20241022'
 ]
 
+// Interface pour la palette générée
+interface GeneratedPalette {
+  accent: string
+  accentContrast: string
+  accentLight: string
+  accentDark: string
+  textHighlight: string
+}
+
 export default defineEventHandler(async (event) => {
-  const { prompt, apiKey, title, model } = await readBody(event)
+  const { prompt, apiKey, title, model, baseColor } = await readBody(event)
 
   if (!prompt || !apiKey) {
     throw createError({
@@ -300,11 +340,59 @@ export default defineEventHandler(async (event) => {
       apiKey: apiKey
     })
 
+    // Étape 0 : Génération de la palette WCAG
+    console.log('🎨 Génération de la palette...')
+    let palette: GeneratedPalette | null = null
+
+    if (baseColor) {
+      try {
+        const paletteResponse = await anthropic.messages.create({
+          model: selectedModel,
+          max_tokens: 512,
+          system: PALETTE_PROMPT,
+          messages: [
+            {
+              role: 'user',
+              content: `Couleur d'accent fournie par l'utilisateur : ${baseColor}`
+            }
+          ]
+        })
+
+        const paletteText = paletteResponse.content
+          .filter(block => block.type === 'text')
+          .map(block => (block as { type: 'text'; text: string }).text)
+          .join('')
+
+        // Parser le JSON de la palette
+        const jsonMatch = paletteText.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          palette = JSON.parse(jsonMatch[0]) as GeneratedPalette
+          console.log('✅ Palette générée:', palette)
+        }
+      } catch (paletteError: any) {
+        console.log('⚠️ Erreur génération palette, utilisation fallback:', paletteError.message)
+      }
+    }
+
+    // Fallback si pas de palette générée
+    if (!palette) {
+      const base = baseColor || '#0073aa'
+      palette = {
+        accent: base,
+        accentContrast: '#ffffff',
+        accentLight: lightenColor(base, 20),
+        accentDark: darkenColor(base, 20),
+        textHighlight: '#fbbf24' // Jaune par défaut
+      }
+      console.log('📦 Palette fallback:', palette)
+    }
+
     const userPrompt = title
       ? `Titre de la présentation : "${title}"\n\nContenu source :\n${prompt}`
       : prompt
 
     // Étape 1 : Génération initiale
+    console.log('📝 Génération du markdown...')
     const response = await anthropic.messages.create({
       model: selectedModel,
       max_tokens: 8192,
@@ -324,6 +412,7 @@ export default defineEventHandler(async (event) => {
       .join('\n')
 
     // Étape 2 : Relecture et amélioration
+    console.log('🔍 Relecture du markdown...')
     const reviewResponse = await anthropic.messages.create({
       model: selectedModel,
       max_tokens: 8192,
@@ -346,7 +435,8 @@ export default defineEventHandler(async (event) => {
 
     return {
       markdown,
-      slides
+      slides,
+      palette
     }
 
   } catch (error: any) {
@@ -357,6 +447,30 @@ export default defineEventHandler(async (event) => {
     })
   }
 })
+
+/**
+ * Éclaircit une couleur hex
+ */
+function lightenColor(hex: string, percent: number): string {
+  const num = parseInt(hex.replace('#', ''), 16)
+  const amt = Math.round(2.55 * percent)
+  const R = Math.min(255, (num >> 16) + amt)
+  const G = Math.min(255, ((num >> 8) & 0x00FF) + amt)
+  const B = Math.min(255, (num & 0x0000FF) + amt)
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)
+}
+
+/**
+ * Assombrit une couleur hex
+ */
+function darkenColor(hex: string, percent: number): string {
+  const num = parseInt(hex.replace('#', ''), 16)
+  const amt = Math.round(2.55 * percent)
+  const R = Math.max(0, (num >> 16) - amt)
+  const G = Math.max(0, ((num >> 8) & 0x00FF) - amt)
+  const B = Math.max(0, (num & 0x0000FF) - amt)
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)
+}
 
 function parseSlides(markdown: string): Slide[] {
   const slideTexts = markdown.split(/\n---\n/).filter(s => s.trim())
