@@ -1,6 +1,6 @@
 {
   "name": "prez-app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Générateur de présentations avec IA",
   "type": "module",
   "scripts": {
