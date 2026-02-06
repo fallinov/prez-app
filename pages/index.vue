@@ -28,7 +28,19 @@ onMounted(() => {
   if (!user.value) {
     navigateTo('/login')
   }
+  // Charger la clé API depuis localStorage
+  const savedApiKey = localStorage.getItem('prez-api-key')
+  if (savedApiKey) {
+    apiKey.value = savedApiKey
+  }
   loadPresentations()
+})
+
+// Sauvegarder la clé API quand elle change
+watch(apiKey, (newKey) => {
+  if (newKey) {
+    localStorage.setItem('prez-api-key', newKey)
+  }
 })
 
 // États du formulaire (valeurs par défaut pour tests)
@@ -205,7 +217,7 @@ function logout() {
               />
             </UFormField>
 
-            <UFormField label="Votre clé API Claude" name="apiKey" hint="Non stockée">
+            <UFormField label="Votre clé API Claude" name="apiKey" hint="Stockée localement">
               <UInput
                 v-model="apiKey"
                 type="password"
