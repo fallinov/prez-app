@@ -521,6 +521,19 @@ function parseSpecialBlocks(content: string): string {
     return renderTipBlock(inner.trim())
   })
 
+  // :::image query ou url
+  // Format: :::image paris tour eiffel:::  ou  :::image https://example.com/photo.jpg:::
+  // Avec légende optionnelle sur la ligne suivante
+  html = html.replace(/:::image\s+(.+?)\n?(.*?):::/gs, (_, source, caption) => {
+    return renderImageBlock(source.trim(), caption.trim())
+  })
+
+  // :::video url:::
+  // Format: :::video https://youtube.com/watch?v=xxx:::
+  html = html.replace(/:::video\s+(.+?):::/g, (_, url) => {
+    return renderVideoBlock(url.trim())
+  })
+
   return html
 }
 
@@ -828,6 +841,83 @@ function renderTipBlock(content: string): string {
     <div class="bg-accent/10 border border-accent/30 p-4 rounded-2xl mt-6 mb-8 flex items-start gap-3">
         <div class="flex-shrink-0 mt-0.5">${lucideIcon('lightbulb', 'w-5 h-5 text-accent')}</div>
         <p class="text-accent font-medium">${formatInlineMarkdown(cleanContent)}</p>
+    </div>`
+}
+
+/**
+ * Bloc image (Unsplash ou URL directe)
+ * Format: :::image paris tour eiffel::: ou :::image https://example.com/photo.jpg:::
+ */
+function renderImageBlock(source: string, caption: string): string {
+  let imageUrl: string
+  let altText: string
+
+  // Vérifier si c'est une URL directe
+  if (source.startsWith('http://') || source.startsWith('https://')) {
+    imageUrl = source
+    altText = caption || 'Image'
+  } else {
+    // Utiliser Unsplash Source API (gratuit, pas de clé requise)
+    // Format: https://source.unsplash.com/1600x900/?query
+    const query = encodeURIComponent(source)
+    imageUrl = `https://source.unsplash.com/1600x900/?${query}`
+    altText = caption || source
+  }
+
+  const captionHtml = caption
+    ? `<figcaption class="text-center text-sm text-slate-400 mt-3">${escapeHtml(caption)}</figcaption>`
+    : ''
+
+  return `
+    <figure class="mb-8">
+        <div class="rounded-2xl overflow-hidden shadow-lg">
+            <img src="${imageUrl}" alt="${escapeHtml(altText)}" class="w-full h-auto object-cover max-h-96" loading="lazy" />
+        </div>
+        ${captionHtml}
+    </figure>`
+}
+
+/**
+ * Bloc vidéo (YouTube, Vimeo)
+ * Format: :::video https://youtube.com/watch?v=xxx:::
+ */
+function renderVideoBlock(url: string): string {
+  let embedUrl = ''
+
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/)
+  if (ytMatch) {
+    embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`
+  }
+
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+  if (vimeoMatch) {
+    embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`
+  }
+
+  if (!embedUrl) {
+    // URL non reconnue, afficher un lien
+    return `
+      <div class="mb-8 p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+          <a href="${escapeHtml(url)}" target="_blank" class="text-accent hover:underline flex items-center gap-2">
+              ${lucideIcon('play-circle', 'w-6 h-6')}
+              Voir la vidéo
+          </a>
+      </div>`
+  }
+
+  return `
+    <div class="mb-8">
+        <div class="relative rounded-2xl overflow-hidden shadow-lg" style="padding-bottom: 56.25%;">
+            <iframe
+                src="${embedUrl}"
+                class="absolute inset-0 w-full h-full"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+            ></iframe>
+        </div>
     </div>`
 }
 

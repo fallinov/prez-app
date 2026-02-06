@@ -131,6 +131,20 @@ Dans WordPress : Médiathèque → Champ "Texte alternatif"
 - \`:::steps\` — Étapes numérotées avec badges
 - \`:::points\` — Points avec icônes (non cartes)
 - \`:::tip\` — Conseil mis en valeur
+- \`:::image mots-clés:::\` — Image Unsplash automatique (ex: \`:::image paris tour eiffel nuit:::\`)
+- \`:::image https://url.com/photo.jpg:::\` — Image URL directe
+- \`:::video https://youtube.com/watch?v=xxx:::\` — Vidéo YouTube/Vimeo
+
+## Images et médias
+Utilise \`:::image\` pour illustrer les slides quand c'est pertinent :
+\`\`\`
+:::image paysage montagne suisse
+Vue panoramique des Alpes
+:::
+\`\`\`
+- Choisis des mots-clés en anglais pour de meilleurs résultats Unsplash
+- Ajoute une légende descriptive sur la ligne suivante
+- N'abuse pas : 2-3 images max par présentation
 
 ## Cartes avec couleurs
 \`[TITRE|couleur]\` où couleur = yellow, blue, green, red, purple, orange, accent
