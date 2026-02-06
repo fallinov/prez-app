@@ -57,33 +57,38 @@ export default defineEventHandler(async (event) => {
 
     // Étape 3 : Revue HTML par l'IA (si clé API fournie)
     if (apiKey) {
-      console.log('🔍 Revue HTML en cours...')
-      const anthropic = new Anthropic({ apiKey })
+      try {
+        console.log('🔍 Revue HTML en cours...')
+        const anthropic = new Anthropic({ apiKey })
 
-      // Utiliser Haiku pour la revue (rapide et économique)
-      const reviewResponse = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 16384,
-        system: HTML_REVIEW_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: `Vérifie et corrige ce HTML si nécessaire :\n\n${html}`
-          }
-        ]
-      })
+        // Utiliser Haiku pour la revue (rapide et économique)
+        const reviewResponse = await anthropic.messages.create({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 8192,
+          system: HTML_REVIEW_PROMPT,
+          messages: [
+            {
+              role: 'user',
+              content: `Vérifie et corrige ce HTML si nécessaire :\n\n${html}`
+            }
+          ]
+        })
 
-      const reviewedHtml = reviewResponse.content
-        .filter(block => block.type === 'text')
-        .map(block => (block as { type: 'text'; text: string }).text)
-        .join('\n')
+        const reviewedHtml = reviewResponse.content
+          .filter(block => block.type === 'text')
+          .map(block => (block as { type: 'text'; text: string }).text)
+          .join('\n')
 
-      // Utiliser le HTML corrigé seulement s'il est valide (commence par <!DOCTYPE)
-      if (reviewedHtml.trim().startsWith('<!DOCTYPE')) {
-        html = reviewedHtml
-        console.log('✅ HTML corrigé par l\'IA')
-      } else {
-        console.log('⚠️ HTML non modifié (réponse IA invalide)')
+        // Utiliser le HTML corrigé seulement s'il est valide (commence par <!DOCTYPE)
+        if (reviewedHtml.trim().startsWith('<!DOCTYPE')) {
+          html = reviewedHtml
+          console.log('✅ HTML corrigé par l\'IA')
+        } else {
+          console.log('⚠️ HTML non modifié (réponse IA invalide ou tronquée)')
+        }
+      } catch (reviewError: any) {
+        console.log('⚠️ Revue HTML ignorée:', reviewError.message || 'Erreur inconnue')
+        // On continue avec le HTML original
       }
     }
 
