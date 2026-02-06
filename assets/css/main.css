@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Variables personnalisées pour PREZ */
+:root {
+  --prez-primary: #0073aa;
+  --prez-primary-light: #00a0d2;
+  --prez-dark: #0f172a;
+  --prez-orange: #d54e21;
+}
