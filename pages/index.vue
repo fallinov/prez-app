@@ -83,7 +83,6 @@ const modelOptions = [
   { label: 'Claude Haiku 3.5 (Rapide)', value: 'claude-3-5-haiku-20241022' }
 ]
 const selectedModel = ref('claude-sonnet-4-20250514')
-const enableVisualReview = ref(false)
 const loading = ref(false)
 const error = ref('')
 
@@ -130,18 +129,6 @@ const generatedHtml = ref('')
 const generatedUrl = ref('')
 const slides = ref<Slide[]>([])
 
-// Résultat revue visuelle
-interface VisualReviewResult {
-  score: number
-  issues: Array<{
-    type: string
-    severity: 'error' | 'warning' | 'info'
-    message: string
-  }>
-  summary: string
-  screenshotUrl?: string
-}
-const visualReview = ref<VisualReviewResult | null>(null)
 
 // Charger les présentations
 async function loadPresentations() {
@@ -224,7 +211,7 @@ async function generatePresentation() {
     // Étape 3 : Création du HTML
     setStepStatus('render', 'active')
 
-    // L'API fait render + revue UX + revue visuelle (optionnelle)
+    // L'API fait render + revue UX
     const renderPromise = $fetch('/api/render', {
       method: 'POST',
       body: {
@@ -232,8 +219,7 @@ async function generatePresentation() {
         slides: slides.value,
         baseColor: baseColor.value,
         title: title.value || slides.value[0]?.title || 'Présentation',
-        apiKey: apiKey.value,
-        enableVisualReview: enableVisualReview.value
+        apiKey: apiKey.value
       }
     })
 
@@ -252,7 +238,6 @@ async function generatePresentation() {
 
     generatedHtml.value = htmlResponse.html
     generatedUrl.value = htmlResponse.url
-    visualReview.value = htmlResponse.visualReview || null
 
     // Étape 5 : Sauvegarde
     setStepStatus('save', 'active')
@@ -386,12 +371,7 @@ function logout() {
               </div>
             </UFormField>
 
-            <div class="flex items-center gap-2">
-              <UCheckbox v-model="enableVisualReview" />
-              <span class="text-sm text-gray-400">Activer la revue visuelle (screenshot + analyse IA)</span>
-            </div>
-
-            <UFormField label="Décrivez votre présentation" name="prompt" class="w-full">
+<UFormField label="Décrivez votre présentation" name="prompt" class="w-full">
               <UTextarea
                 v-model="prompt"
                 :rows="12"
@@ -475,43 +455,6 @@ function logout() {
               />
             </div>
 
-            <!-- Résultat revue visuelle -->
-            <div v-if="visualReview" class="mt-4 p-4 bg-gray-800 rounded-lg">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-white">Revue visuelle</h3>
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl font-bold" :class="{
-                    'text-green-400': visualReview.score >= 8,
-                    'text-yellow-400': visualReview.score >= 5 && visualReview.score < 8,
-                    'text-red-400': visualReview.score < 5
-                  }">{{ visualReview.score }}/10</span>
-                </div>
-              </div>
-              <p class="text-sm text-gray-300 mb-3">{{ visualReview.summary }}</p>
-              <div v-if="visualReview.issues?.length" class="space-y-2">
-                <div
-                  v-for="(issue, i) in visualReview.issues"
-                  :key="i"
-                  class="flex items-start gap-2 text-sm"
-                  :class="{
-                    'text-red-400': issue.severity === 'error',
-                    'text-yellow-400': issue.severity === 'warning',
-                    'text-blue-400': issue.severity === 'info'
-                  }"
-                >
-                  <span>{{ issue.severity === 'error' ? '❌' : issue.severity === 'warning' ? '⚠️' : 'ℹ️' }}</span>
-                  <span>{{ issue.message }}</span>
-                </div>
-              </div>
-              <a
-                v-if="visualReview.screenshotUrl"
-                :href="visualReview.screenshotUrl"
-                target="_blank"
-                class="text-xs text-accent hover:underline mt-2 block"
-              >
-                Voir le screenshot
-              </a>
-            </div>
           </div>
         </UCard>
 
