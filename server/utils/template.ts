@@ -153,7 +153,12 @@ export function renderPresentation(options: RenderOptions): string {
             height: 100vh;
             max-height: 100vh;
             scroll-snap-align: start;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .slide-content-wrapper {
+            padding-top: 6rem;
+            padding-bottom: 4rem;
         }
         .gradient-accent { background: linear-gradient(135deg, ${palette.accent} 0%, ${palette.accentDark} 100%); }
 
@@ -423,8 +428,8 @@ function renderContentSlide(slide: Slide, index: number, bgClass: string): strin
   const contentHtml = parseContent(slide.content)
 
   return `
-    <section id="slide-${index + 1}" class="slide flex items-center ${bgClass} py-20">
-        <div class="max-w-6xl mx-auto px-6 w-full">
+    <section id="slide-${index + 1}" class="slide ${bgClass}">
+        <div class="max-w-6xl mx-auto px-6 w-full slide-content-wrapper">
             <span class="text-accent font-mono text-base mb-4 block">${String(index).padStart(2, '0')} / ${escapeHtml(sectionLabel)}</span>
             <h2 class="text-4xl md:text-5xl font-bold mb-8">${formatTitle(slide.title)}</h2>
             <div class="slide-content">
