@@ -4,17 +4,17 @@
 
 Génère des présentations HTML pédagogiques avec Claude AI.
 
-**Version** : 1.0.0
+**Version** : 1.1.0
 
 ## Fonctionnalités
 
-- **Double passe IA** : Génération puis relecture automatique
-- **Images automatiques** : Loremflickr via mots-clés anglais
+- **Triple passe IA** : Génération → Relecture → Revue UX/accessibilité
+- **Sélecteur de modèle** : Sonnet 4, Opus 4, Haiku 3.5
 - **Vidéos intégrées** : YouTube et Vimeo
 - **Liens cliquables** : Syntaxe Markdown standard
-- **Icônes professionnelles** : Lucide Icons (pas d'emojis)
+- **Icônes professionnelles** : Lucide Icons
 - **Mode contraste** : Pour vidéoprojecteurs (touche C)
-- **Export HTML** : Fichier autonome, aucune dépendance
+- **Export HTML** : Fichier autonome
 
 ## Démarrage
 
@@ -27,8 +27,15 @@ npm run dev
 
 1. Se connecter (email ESIG)
 2. Coller sa clé API Claude
-3. Décrire la présentation
-4. Télécharger le HTML
+3. Choisir le modèle IA
+4. Décrire la présentation
+5. Télécharger le HTML
+
+## Pipeline de génération
+
+```
+Génération Markdown → Relecture → Rendu HTML → Revue UX → Sauvegarde
+```
 
 ## Raccourcis (présentation)
 
@@ -42,8 +49,6 @@ npm run dev
 
 ## Syntaxe Markdown
 
-L'IA utilise une syntaxe enrichie :
-
 ```markdown
 # Titre de la slide
 
@@ -54,10 +59,6 @@ Citation ou accroche
 :::cards
 [Option 1|blue] Description
 [Option 2|green] Description
-:::
-
-:::image mountain lake switzerland
-Légende de l'image
 :::
 
 :::video https://youtube.com/watch?v=xxx:::
@@ -74,6 +75,6 @@ ALLOWED_EMAILS=steve@esig.ch,collegue@esig.ch
 ## Stack technique
 
 - Nuxt 4 + Nuxt UI 3
-- Claude Sonnet 4 (`claude-sonnet-4-20250514`)
+- Claude API (Sonnet 4, Opus 4, Haiku 3.5)
 - Tailwind CSS (CDN)
 - Lucide Icons (CDN)

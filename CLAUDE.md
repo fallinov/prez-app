@@ -4,8 +4,7 @@
 
 Générateur de présentations HTML pédagogiques avec IA (Claude).
 
-**Version** : 1.0.0
-**Modèle IA** : `claude-sonnet-4-20250514`
+**Version** : 1.1.0
 
 ## Philosophie PREZ
 
@@ -31,14 +30,36 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| **Double passe IA** | Génération puis relecture/correction automatique |
-| **Images Loremflickr** | Insertion automatique via mots-clés anglais |
+| **Triple passe IA** | Génération → Relecture → Revue UX/accessibilité |
+| **Sélecteur de modèle** | Sonnet 4, Opus 4, Haiku 3.5 |
 | **Vidéos YouTube/Vimeo** | Embed responsive avec un simple lien |
 | **Liens cliquables** | Syntaxe Markdown `[texte](url)` supportée |
 | **Icônes Lucide** | Remplacent les emojis pour un rendu pro |
 | **Mode contraste** | Touche C pour vidéoprojecteurs |
 | **Persistance clé API** | Stockée en localStorage (optionnel) |
-| **Modal de progression** | Étapes visibles + bouton annuler |
+| **Modal de progression** | 5 étapes visibles + bouton annuler |
+
+## Pipeline de génération
+
+```
+1. Génération Markdown     (Sonnet/Opus/Haiku selon choix)
+         ↓
+2. Relecture Markdown      (même modèle)
+         ↓
+3. Rendu HTML              (template.ts)
+         ↓
+4. Revue UX/Accessibilité  (Haiku - rapide)
+         ↓
+5. Sauvegarde
+```
+
+## Modèles IA disponibles
+
+| Modèle | ID | Usage |
+|--------|-----|-------|
+| Sonnet 4 | `claude-sonnet-4-20250514` | Recommandé (équilibré) |
+| Opus 4 | `claude-opus-4-20250514` | Plus puissant (lent + cher) |
+| Haiku 3.5 | `claude-3-5-haiku-20241022` | Rapide (économique) |
 
 ## Stack technique
 
@@ -46,24 +67,23 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 |-------------|---------|-------|
 | Nuxt | 4.x | Framework fullstack |
 | Nuxt UI | 3.x | Composants UI |
-| Anthropic SDK | 0.73+ | API Claude (Sonnet 4) |
+| Anthropic SDK | 0.73+ | API Claude |
 | Tailwind CSS | CDN | Styles présentations |
 | Lucide Icons | CDN | Icônes professionnelles |
-| gray-matter | 4.x | Parsing frontmatter |
 
 ## Architecture
 
 ```
 prez-app/
 ├── pages/
-│   ├── index.vue          # Formulaire principal (3 champs max)
-│   └── login.vue          # Email uniquement
+│   ├── index.vue          # Formulaire principal
+│   └── login.vue          # Auth email
 ├── server/
 │   ├── api/
-│   │   ├── generate.post.ts   # Claude → Markdown → Slides
-│   │   └── render.post.ts     # Slides → HTML
+│   │   ├── generate.post.ts   # IA: Markdown + relecture
+│   │   └── render.post.ts     # HTML + revue UX
 │   └── utils/
-│       ├── template.ts        # Template HTML présentation
+│       ├── template.ts        # Template HTML
 │       └── palette.ts         # Palettes WCAG
 ├── types/
 │   └── index.ts
@@ -75,64 +95,24 @@ prez-app/
 
 **Les présentations DOIVENT être lisibles par tous : sur vidéoprojecteur en salle éclairée, par des daltoniens, par des malvoyants.**
 
-### Principes fondamentaux
+### Navigation clavier
 
-1. **Contrastes suffisants** : Respecter WCAG AA (4.5:1 pour le texte, 3:1 pour les éléments graphiques). Valider avec `validatePalette()`.
+| Touche | Action |
+|--------|--------|
+| ↓ / → / Espace / Entrée | Slide suivante |
+| ↑ / ← | Slide précédente |
+| Home | Première slide |
+| End | Dernière slide |
+| C | Mode contraste élevé |
 
-2. **Navigation clavier complète** :
-   | Touche | Action |
-   |--------|--------|
-   | ↓ / → / Espace / Entrée | Slide suivante |
-   | ↑ / ← | Slide précédente |
-   | Home | Première slide |
-   | End | Dernière slide |
-   | C | Mode contraste élevé |
+### Principes
 
-3. **Mode contraste élevé** : Fond noir pur (#000), texte blanc pur (#FFF), accent conservé. Essentiel pour les vidéoprojecteurs en salles éclairées.
-
-4. **Lisibilité maximale** :
-   - Titres : 4xl-7xl (40-72px)
-   - Corps : lg-2xl (18-24px)
-   - Maximum 6 points par slide
-   - Espacement généreux
-
-5. **Touch targets** : 44×44px minimum pour les éléments interactifs (WCAG 2.5.5).
-
-### Guidelines slides
-
-- **Pas de paragraphes longs** — Phrases courtes, listes à puces
-- **Hiérarchie visuelle claire** — Titre, numéro de slide, contenu
-- **Respirer** — Beaucoup d'espace vide
-- **1 idée = 1 slide** — Ne jamais surcharger
-
-### Tests accessibilité
-
-Avant toute modification du template :
-1. Tester en mode contraste élevé (touche C)
-2. Simuler daltonisme (DevTools > Rendering > Emulate vision deficiencies)
-3. Valider ratios de contraste (4.5:1 minimum)
-4. Tester navigation clavier complète
-
-## Nuxt UI (conventions)
-
-### Couleurs valides pour UButton
-```typescript
-// OK
-'primary' | 'secondary' | 'neutral' | 'error' | 'success' | 'info' | 'warning'
-
-// ❌ NE PAS UTILISER
-'white' | 'black' | 'gray' | 'dark'
-```
-
-### Override styles Nuxt UI
-Les composants Nuxt UI ont une spécificité élevée. Utiliser `!important` :
-```vue
-<UButton class="!bg-transparent !text-white hover:!bg-white/10">
-```
+1. **Contrastes WCAG AA** : 4.5:1 pour le texte, 3:1 pour les graphiques
+2. **Mode contraste élevé** : Fond noir pur (#000), texte blanc (#FFF)
+3. **Lisibilité** : Titres 4xl-7xl, corps lg-2xl, max 6 points/slide
+4. **Touch targets** : 44×44px minimum
 
 ## Syntaxe Markdown PREZ
-
-L'IA génère du Markdown enrichi avec des blocs spéciaux :
 
 ### Blocs de contenu
 
@@ -147,19 +127,12 @@ L'IA génère du Markdown enrichi avec des blocs spéciaux :
 :::tip                # Conseil mis en valeur
 ```
 
-### Médias
+### Vidéos
 
 ```markdown
-:::image mountain switzerland lake
-Légende de l'image
-:::
-
 :::video https://youtube.com/watch?v=xxx:::
 :::video https://vimeo.com/xxx:::
 ```
-
-**Images** : Mots-clés en anglais → Loremflickr automatique (Unsplash Source fermé en 2024)
-**Vidéos** : URL YouTube ou Vimeo → embed responsive
 
 ### Liens
 
@@ -181,6 +154,10 @@ Légende de l'image
 - `→` → action/étape
 - Emojis → convertis en icônes Lucide
 
+### Images (DÉSACTIVÉ)
+
+Les images via `:::image:::` sont temporairement désactivées (service Loremflickr non fiable).
+
 ## Sécurité
 
 - **Token Claude API** : Stocké en localStorage (optionnel, effaçable)
@@ -190,7 +167,6 @@ Légende de l'image
 ## Variables d'environnement
 
 ```env
-SESSION_SECRET=change-this-in-production
 ALLOWED_EMAILS=steve@esig.ch,collegue@esig.ch
 ```
 
@@ -209,105 +185,52 @@ npm run build  # Production
 2. **Si non** : Ne pas l'implémenter
 3. **Si oui** : L'implémenter de la manière la plus simple possible
 
-### Lors de modifications UI
-
-1. Conserver le minimalisme (3 champs max sur le formulaire)
-2. Tester l'accessibilité (contraste, clavier, daltonisme)
-3. Pas d'animations superflues
-4. Pas de modals imbriquées
-
-### Lors de modifications template slides
+### Lors de modifications template
 
 1. Conserver la navigation clavier
 2. Conserver le mode contraste (touche C)
 3. Valider les contrastes WCAG
-4. Tester sur fond clair ET fond sombre
-5. Maximum 6 points par slide dans le prompt système
+4. Maximum 6 points par slide
 
 ### Code style
 
 - TypeScript strict
 - Composition API Vue.js
 - Nuxt UI pour tous les composants
-- Pas de dépendances inutiles
 
-## Design des slides (référence : 741/2026-sfa-wordpress-gestion-medias)
+## Design des slides
 
-### Structure d'une présentation
+### Structure
 
 ```
 Slide 1 : Titre (hero)
-├── Logo/icône centré
 ├── Titre 5xl-7xl bold
 ├── Sous-titre text-white/90
-├── Tags en badges (bg-white/20 rounded-full)
-└── Indicateur "Défiler" avec animation pulse
+├── Tags en badges
+└── Indicateur "Défiler"
 
 Slides 2-N : Contenu
-├── Numéro "01 / Section" en font-mono accent
-├── Titre 4xl-5xl avec mot-clé en accent
-├── Layout 2 colonnes (texte | visuel)
-└── Cartes arrondies avec bordures subtiles
+├── Numéro "01 / Section"
+├── Titre avec mot-clé en accent
+└── Cartes/listes/comparaisons
 
 Slide finale : Récapitulatif
-├── Checklist visuelle
-├── Call-to-action clair
+├── Checklist (:::steps)
 └── Liens utiles
 ```
 
-### Patterns visuels
+### Classes Tailwind
 
-| Élément | Classes Tailwind |
-|---------|------------------|
-| Slide titre | `gradient-accent` (dégradé basé sur couleur choisie) |
-| Slides impaires | `bg-gray-900` |
-| Slides paires | `bg-gray-800` |
-| Cartes | `bg-slate-800/50 border border-slate-700 rounded-2xl p-6` |
-| Badges | `px-4 py-2 bg-white/20 rounded-full text-sm` |
-| Numéro slide | `text-accent font-mono text-base` |
-| Accent texte | `text-accent` ou `<strong class="text-white">` |
-
-### Typographie
-
-- **Titres** : Inter 700-800, 4xl-7xl
-- **Corps** : Inter 400, lg-xl, text-slate-300
-- **Code** : JetBrains Mono, bg-slate-700 px-2 py-1 rounded
-- **Numéros** : font-mono
-
-### Animations (minimalistes)
-
-- `fadeInUp` : Apparition slide titre
-- `pulse-slow` : Indicateur "défiler"
-- `transition-all` : Hover sur éléments interactifs
-- **Pas d'animations complexes** — distraction inutile
+| Élément | Classes |
+|---------|---------|
+| Slide titre | `gradient-accent` |
+| Slides impaires | `bg-slate-900` |
+| Slides paires | `bg-slate-800` |
+| Cartes | `bg-slate-800/50 border border-slate-700 rounded-2xl` |
+| Accent texte | `text-accent` |
 
 ### Icônes
 
-- **Lucide Icons** via CDN (pas d'emojis dans le rendu final)
-- Les emojis du Markdown sont automatiquement convertis
-- SVG inline via `<i data-lucide="icon-name"></i>`
-- Taille cohérente : w-5 h-5 (inline)
-
-### Couleurs sémantiques
-
-```css
-/* États */
-.text-green-400   /* Succès, bonne pratique */
-.text-red-400     /* Erreur, mauvaise pratique */
-.text-yellow-400  /* Attention, avertissement */
-.text-accent      /* Mot-clé, emphase */
-
-/* Fonds */
-.bg-green-500/10  /* Carte succès */
-.bg-red-500/10    /* Carte erreur */
-.bg-accent/10     /* Carte info accent */
-```
-
-### Règles de contenu
-
-1. **Maximum 6 points** par slide (prompt IA)
-2. **Pas de paragraphes** > 2 lignes
-3. **1 concept = 1 slide**
-4. **Comparaisons visuelles** (bon/mauvais côte à côte)
-5. **Progression numérotée** (01, 02, 03...)
-6. **Exemples concrets** avec code ou visuels
+- **Lucide Icons** via CDN
+- Emojis convertis automatiquement
+- Format : `<i data-lucide="icon-name"></i>`
