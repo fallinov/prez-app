@@ -162,6 +162,9 @@ async function generatePresentation() {
   resetProgress()
   showProgressModal.value = true
 
+  // Créer un AbortController pour permettre l'annulation
+  abortController.value = new AbortController()
+
   try {
     // Étape 1 : Génération du contenu
     setStepStatus('generate', 'active')
@@ -174,7 +177,8 @@ async function generatePresentation() {
         prompt: prompt.value,
         apiKey: apiKey.value,
         title: title.value || 'Présentation'
-      }
+      },
+      signal: abortController.value.signal
     })
 
     // Après 3 secondes, passer à l'étape de relecture (estimation)
@@ -221,6 +225,11 @@ async function generatePresentation() {
     }, 800)
 
   } catch (e: any) {
+    // Ignorer les erreurs d'annulation
+    if (e.name === 'AbortError' || e.message?.includes('aborted')) {
+      return
+    }
+
     // Marquer l'étape en cours comme erreur
     const activeStep = progressSteps.value.find(s => s.status === 'active')
     if (activeStep) setStepStatus(activeStep.id, 'error')
@@ -234,7 +243,21 @@ async function generatePresentation() {
     }, 2000)
   } finally {
     loading.value = false
+    abortController.value = null
   }
+}
+
+// Annuler la génération
+const abortController = ref<AbortController | null>(null)
+
+function cancelGeneration() {
+  if (abortController.value) {
+    abortController.value.abort()
+  }
+  loading.value = false
+  showProgressModal.value = false
+  resetProgress()
+  error.value = 'Génération annulée'
 }
 
 // Télécharger le HTML
@@ -448,17 +471,29 @@ function logout() {
     </footer>
 
     <!-- Modal de progression -->
-    <UModal v-model:open="showProgressModal" :closable="false">
+    <UModal v-model:open="showProgressModal" :closable="false" :prevent-close="true">
       <template #content>
         <div class="p-6">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-              <UIcon name="i-lucide-sparkles" class="w-5 h-5 text-primary animate-pulse" />
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                <UIcon name="i-lucide-sparkles" class="w-5 h-5 text-primary animate-pulse" />
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-white">Génération en cours</h3>
+                <p class="text-sm text-gray-400">L'IA travaille sur votre présentation...</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-lg font-semibold text-white">Génération en cours</h3>
-              <p class="text-sm text-gray-400">L'IA travaille sur votre présentation...</p>
-            </div>
+            <UButton
+              v-if="loading"
+              variant="ghost"
+              color="error"
+              size="sm"
+              @click="cancelGeneration"
+            >
+              <UIcon name="i-lucide-x" class="w-4 h-4 mr-1" />
+              Annuler
+            </UButton>
           </div>
 
           <!-- Barre de progression globale -->
