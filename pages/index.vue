@@ -471,7 +471,7 @@ function logout() {
     </footer>
 
     <!-- Modal de progression -->
-    <UModal v-model:open="showProgressModal" :closable="false" :prevent-close="true">
+    <UModal v-model:open="showProgressModal" :dismissible="false">
       <template #content>
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
