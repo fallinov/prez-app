@@ -210,24 +210,26 @@ function logout() {
           </template>
 
           <form @submit.prevent="generatePresentation" class="space-y-4">
-            <UFormField label="Titre de la présentation" name="title">
+            <UFormField label="Titre de la présentation" name="title" class="w-full">
               <UInput
                 v-model="title"
                 placeholder="Ex: Gestion des médias WordPress"
+                class="w-full"
               />
             </UFormField>
 
-            <UFormField label="Votre clé API Claude" name="apiKey" hint="Stockée localement">
+            <UFormField label="Votre clé API Claude" name="apiKey" hint="Stockée localement" class="w-full">
               <UInput
                 v-model="apiKey"
                 type="password"
                 placeholder="sk-ant-..."
                 required
+                class="w-full"
               />
             </UFormField>
 
-            <UFormField label="Couleur de base" name="color">
-              <div class="flex items-center gap-3">
+            <UFormField label="Couleur de base" name="color" class="w-full">
+              <div class="flex items-center gap-3 w-full">
                 <input
                   type="color"
                   v-model="baseColor"
@@ -237,12 +239,13 @@ function logout() {
               </div>
             </UFormField>
 
-            <UFormField label="Décrivez votre présentation" name="prompt">
+            <UFormField label="Décrivez votre présentation" name="prompt" class="w-full">
               <UTextarea
                 v-model="prompt"
-                :rows="6"
+                :rows="12"
                 placeholder="Ex: Créer une présentation sur l'optimisation des images pour WordPress. Inclure les formats (JPG, PNG, WebP, AVIF), la compression, le nommage SEO et le texte alternatif. Public : étudiants en informatique de gestion."
                 required
+                class="w-full"
               />
             </UFormField>
 
