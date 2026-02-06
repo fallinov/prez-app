@@ -131,7 +131,7 @@ Dans WordPress : Médiathèque → Champ "Texte alternatif"
 - \`:::steps\` — Étapes numérotées avec badges
 - \`:::points\` — Points avec icônes (non cartes)
 - \`:::tip\` — Conseil mis en valeur
-- \`:::image mots-clés:::\` — Image Unsplash automatique (ex: \`:::image paris tour eiffel nuit:::\`)
+- \`:::image mots-clés:::\` — Image automatique via mots-clés (ex: \`:::image paris eiffel tower night:::\`)
 - \`:::image https://url.com/photo.jpg:::\` — Image URL directe
 - \`:::video https://youtube.com/watch?v=xxx:::\` — Vidéo YouTube/Vimeo
 
@@ -142,7 +142,7 @@ IMPORTANT : Utilise UNIQUEMENT le bloc \`:::image\` pour les images, JAMAIS de b
 Vue panoramique des Alpes
 :::
 \`\`\`
-- Mots-clés EN ANGLAIS pour Unsplash (ex: "paris eiffel tower night", "wordpress dashboard")
+- Mots-clés EN ANGLAIS (ex: "paris eiffel tower night", "wordpress dashboard", "computer code")
 - Légende descriptive en français sur la ligne suivante
 - Maximum 2-3 images par présentation
 - Place les images après un paragraphe d'introduction, pas en début de slide
@@ -285,8 +285,15 @@ Relire la présentation fournie et la retourner CORRIGÉE et AMÉLIORÉE.
 Retourne UNIQUEMENT le Markdown corrigé et amélioré, sans commentaires ni explications.
 Conserve EXACTEMENT le même format (séparateurs ---, blocs :::, etc.).`
 
+// Modèles valides
+const VALID_MODELS = [
+  'claude-sonnet-4-20250514',
+  'claude-opus-4-20250514',
+  'claude-3-5-haiku-20241022'
+]
+
 export default defineEventHandler(async (event) => {
-  const { prompt, apiKey, title } = await readBody(event)
+  const { prompt, apiKey, title, model } = await readBody(event)
 
   if (!prompt || !apiKey) {
     throw createError({
@@ -294,6 +301,10 @@ export default defineEventHandler(async (event) => {
       message: 'Prompt et clé API requis'
     })
   }
+
+  // Valider et utiliser le modèle demandé (fallback sur Sonnet)
+  const selectedModel = VALID_MODELS.includes(model) ? model : 'claude-sonnet-4-20250514'
+  console.log(`🤖 Modèle utilisé: ${selectedModel}`)
 
   try {
     const anthropic = new Anthropic({
@@ -306,7 +317,7 @@ export default defineEventHandler(async (event) => {
 
     // Étape 1 : Génération initiale
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: selectedModel,
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [
@@ -325,7 +336,7 @@ export default defineEventHandler(async (event) => {
 
     // Étape 2 : Relecture et amélioration
     const reviewResponse = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: selectedModel,
       max_tokens: 8192,
       system: REVIEW_PROMPT,
       messages: [

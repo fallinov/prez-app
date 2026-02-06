@@ -4,6 +4,9 @@
 
 Générateur de présentations HTML pédagogiques avec IA (Claude).
 
+**Version** : 1.0.0
+**Modèle IA** : `claude-sonnet-4-20250514`
+
 ## Philosophie PREZ
 
 ### Principes directeurs
@@ -20,19 +23,32 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 
 - Pas de surcharge fonctionnelle (pas d'éditeur Markdown complet)
 - Pas de gestion de compte complexe (liste d'emails autorisés)
-- Pas de persistence du token API (sécurité)
 - Pas de features "au cas où"
 
 *Petit prompt. Grande présentation.*
+
+## Fonctionnalités principales
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Double passe IA** | Génération puis relecture/correction automatique |
+| **Images Loremflickr** | Insertion automatique via mots-clés anglais |
+| **Vidéos YouTube/Vimeo** | Embed responsive avec un simple lien |
+| **Liens cliquables** | Syntaxe Markdown `[texte](url)` supportée |
+| **Icônes Lucide** | Remplacent les emojis pour un rendu pro |
+| **Mode contraste** | Touche C pour vidéoprojecteurs |
+| **Persistance clé API** | Stockée en localStorage (optionnel) |
+| **Modal de progression** | Étapes visibles + bouton annuler |
 
 ## Stack technique
 
 | Technologie | Version | Usage |
 |-------------|---------|-------|
 | Nuxt | 4.x | Framework fullstack |
-| Nuxt UI | 4.x | Composants UI |
-| Anthropic SDK | 0.73+ | API Claude |
+| Nuxt UI | 3.x | Composants UI |
+| Anthropic SDK | 0.73+ | API Claude (Sonnet 4) |
 | Tailwind CSS | CDN | Styles présentations |
+| Lucide Icons | CDN | Icônes professionnelles |
 | gray-matter | 4.x | Parsing frontmatter |
 
 ## Architecture
@@ -114,9 +130,60 @@ Les composants Nuxt UI ont une spécificité élevée. Utiliser `!important` :
 <UButton class="!bg-transparent !text-white hover:!bg-white/10">
 ```
 
+## Syntaxe Markdown PREZ
+
+L'IA génère du Markdown enrichi avec des blocs spéciaux :
+
+### Blocs de contenu
+
+```markdown
+:::intro              # Bloc d'introduction avec citation
+:::sidebar Titre      # Panneau latéral avec liste
+:::cards              # Grille de cartes avec couleurs
+:::compare            # Barres de progression comparatives
+:::stats              # Statistiques côte à côte
+:::steps              # Étapes numérotées avec badges
+:::points             # Points avec icônes
+:::tip                # Conseil mis en valeur
+```
+
+### Médias
+
+```markdown
+:::image mountain switzerland lake
+Légende de l'image
+:::
+
+:::video https://youtube.com/watch?v=xxx:::
+:::video https://vimeo.com/xxx:::
+```
+
+**Images** : Mots-clés en anglais → Loremflickr automatique (Unsplash Source fermé en 2024)
+**Vidéos** : URL YouTube ou Vimeo → embed responsive
+
+### Liens
+
+```markdown
+[TinyPNG](https://tinypng.com)
+[Squoosh](https://squoosh.app)
+```
+
+### Cartes avec couleurs
+
+```markdown
+[TITRE|yellow]   # yellow, blue, green, red, purple, orange, accent
+```
+
+### Symboles
+
+- `✓` → point positif (vert)
+- `✗` → point négatif (rouge)
+- `→` → action/étape
+- Emojis → convertis en icônes Lucide
+
 ## Sécurité
 
-- **Token Claude API** : Jamais persisté, uniquement en session navigateur
+- **Token Claude API** : Stocké en localStorage (optionnel, effaçable)
 - **Emails autorisés** : Liste dans `.env`, validation côté serveur
 - **Session** : Côté client uniquement, pas de BDD
 
@@ -216,9 +283,10 @@ Slide finale : Récapitulatif
 
 ### Icônes
 
-- Emojis pour les sections (🗜️ ✂️ 🔄 💻)
-- SVG inline pour les icônes UI
-- Taille cohérente : w-5 h-5 (inline) ou text-4xl (emoji section)
+- **Lucide Icons** via CDN (pas d'emojis dans le rendu final)
+- Les emojis du Markdown sont automatiquement convertis
+- SVG inline via `<i data-lucide="icon-name"></i>`
+- Taille cohérente : w-5 h-5 (inline)
 
 ### Couleurs sémantiques
 

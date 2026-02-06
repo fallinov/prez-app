@@ -863,10 +863,10 @@ function renderImageBlock(source: string, caption: string): string {
     imageUrl = source
     altText = caption || 'Image'
   } else {
-    // Utiliser Unsplash Source API (gratuit, pas de clé requise)
-    // Format: https://source.unsplash.com/1600x900/?query
-    const query = encodeURIComponent(source)
-    imageUrl = `https://source.unsplash.com/1600x900/?${query}`
+    // Utiliser Loremflickr (Unsplash Source fermé en juin 2024)
+    // Format: https://loremflickr.com/1600/900/keyword1,keyword2
+    const keywords = source.trim().split(/\s+/).join(',')
+    imageUrl = `https://loremflickr.com/1600/900/${encodeURIComponent(keywords)}`
     altText = caption || source
   }
 

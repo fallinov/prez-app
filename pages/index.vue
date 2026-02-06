@@ -75,6 +75,14 @@ WordPress : remplir le champ "Texte alternatif" dans la médiathèque.`)
 const apiKey = ref('')
 const baseColor = ref('#0073aa')
 const title = ref('Gestion des médias WordPress')
+
+// Modèles LLM disponibles
+const modelOptions = [
+  { label: 'Claude Sonnet 4 (Recommandé)', value: 'claude-sonnet-4-20250514' },
+  { label: 'Claude Opus 4 (Plus puissant)', value: 'claude-opus-4-20250514' },
+  { label: 'Claude Haiku 3.5 (Rapide)', value: 'claude-3-5-haiku-20241022' }
+]
+const selectedModel = ref('claude-sonnet-4-20250514')
 const loading = ref(false)
 const error = ref('')
 
@@ -176,7 +184,8 @@ async function generatePresentation() {
       body: {
         prompt: prompt.value,
         apiKey: apiKey.value,
-        title: title.value || 'Présentation'
+        title: title.value || 'Présentation',
+        model: selectedModel.value
       },
       signal: abortController.value.signal
     })
@@ -323,6 +332,14 @@ function logout() {
                 type="password"
                 placeholder="sk-ant-..."
                 required
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Modèle IA" name="model" class="w-full">
+              <USelect
+                v-model="selectedModel"
+                :items="modelOptions"
                 class="w-full"
               />
             </UFormField>
