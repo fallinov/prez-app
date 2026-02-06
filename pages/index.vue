@@ -15,35 +15,7 @@ const user = ref<string | null>(null)
 // Liste des présentations existantes
 const presentations = ref<PresentationFile[]>([])
 
-async function loadPresentations() {
-  try {
-    presentations.value = await $fetch('/api/presentations')
-  } catch {
-    presentations.value = []
-  }
-}
-
-onMounted(() => {
-  user.value = sessionStorage.getItem('prez-user')
-  if (!user.value) {
-    navigateTo('/login')
-  }
-  // Charger la clé API depuis localStorage
-  const savedApiKey = localStorage.getItem('prez-api-key')
-  if (savedApiKey) {
-    apiKey.value = savedApiKey
-  }
-  loadPresentations()
-})
-
-// Sauvegarder la clé API quand elle change
-watch(apiKey, (newKey) => {
-  if (newKey) {
-    localStorage.setItem('prez-api-key', newKey)
-  }
-})
-
-// États du formulaire (valeurs par défaut pour tests)
+// États du formulaire - déclarés AVANT onMounted/watch
 const prompt = ref(`Créer une présentation en te basant sur ce cours :
 
 # Gestion des médias
@@ -111,6 +83,36 @@ const generatedMarkdown = ref('')
 const generatedHtml = ref('')
 const generatedUrl = ref('')
 const slides = ref<Slide[]>([])
+
+// Charger les présentations
+async function loadPresentations() {
+  try {
+    presentations.value = await $fetch('/api/presentations')
+  } catch {
+    presentations.value = []
+  }
+}
+
+// Initialisation au montage
+onMounted(() => {
+  user.value = sessionStorage.getItem('prez-user')
+  if (!user.value) {
+    navigateTo('/login')
+  }
+  // Charger la clé API depuis localStorage
+  const savedApiKey = localStorage.getItem('prez-api-key')
+  if (savedApiKey) {
+    apiKey.value = savedApiKey
+  }
+  loadPresentations()
+})
+
+// Sauvegarder la clé API quand elle change
+watch(apiKey, (newKey) => {
+  if (newKey) {
+    localStorage.setItem('prez-api-key', newKey)
+  }
+})
 
 // Génération
 async function generatePresentation() {
