@@ -78,6 +78,42 @@ const title = ref('Gestion des médias WordPress')
 const loading = ref(false)
 const error = ref('')
 
+// États de progression
+interface ProgressStep {
+  id: string
+  label: string
+  status: 'pending' | 'active' | 'done' | 'error'
+}
+
+const showProgressModal = ref(false)
+const progressSteps = ref<ProgressStep[]>([
+  { id: 'generate', label: 'Génération du contenu', status: 'pending' },
+  { id: 'review', label: 'Relecture et amélioration', status: 'pending' },
+  { id: 'render', label: 'Création du HTML', status: 'pending' },
+  { id: 'save', label: 'Sauvegarde', status: 'pending' }
+])
+
+const currentStepIndex = computed(() => {
+  const activeIndex = progressSteps.value.findIndex(s => s.status === 'active')
+  if (activeIndex >= 0) return activeIndex
+  const lastDone = progressSteps.value.findLastIndex(s => s.status === 'done')
+  return lastDone >= 0 ? lastDone + 1 : 0
+})
+
+const progressPercent = computed(() => {
+  const done = progressSteps.value.filter(s => s.status === 'done').length
+  return Math.round((done / progressSteps.value.length) * 100)
+})
+
+function setStepStatus(id: string, status: ProgressStep['status']) {
+  const step = progressSteps.value.find(s => s.id === id)
+  if (step) step.status = status
+}
+
+function resetProgress() {
+  progressSteps.value.forEach(s => s.status = 'pending')
+}
+
 // Résultat
 const generatedMarkdown = ref('')
 const generatedHtml = ref('')
@@ -123,10 +159,16 @@ async function generatePresentation() {
 
   loading.value = true
   error.value = ''
+  resetProgress()
+  showProgressModal.value = true
 
   try {
-    // 1. Générer le Markdown avec Claude
-    const mdResponse = await $fetch('/api/generate', {
+    // Étape 1 : Génération du contenu
+    setStepStatus('generate', 'active')
+
+    // Simuler la progression entre génération et relecture
+    // (l'API fait les 2 en une seule requête)
+    const generatePromise = $fetch('/api/generate', {
       method: 'POST',
       body: {
         prompt: prompt.value,
@@ -135,10 +177,24 @@ async function generatePresentation() {
       }
     })
 
+    // Après 3 secondes, passer à l'étape de relecture (estimation)
+    setTimeout(() => {
+      if (loading.value) {
+        setStepStatus('generate', 'done')
+        setStepStatus('review', 'active')
+      }
+    }, 3000)
+
+    const mdResponse = await generatePromise
+
+    setStepStatus('generate', 'done')
+    setStepStatus('review', 'done')
+
     generatedMarkdown.value = mdResponse.markdown
     slides.value = mdResponse.slides
 
-    // 2. Générer le HTML
+    // Étape 3 : Création du HTML
+    setStepStatus('render', 'active')
     const htmlResponse = await $fetch('/api/render', {
       method: 'POST',
       body: {
@@ -149,15 +205,33 @@ async function generatePresentation() {
       }
     })
 
+    setStepStatus('render', 'done')
+
     generatedHtml.value = htmlResponse.html
     generatedUrl.value = htmlResponse.url
 
-    // Recharger la liste
+    // Étape 4 : Sauvegarde
+    setStepStatus('save', 'active')
     await loadPresentations()
+    setStepStatus('save', 'done')
+
+    // Fermer le modal après un court délai
+    setTimeout(() => {
+      showProgressModal.value = false
+    }, 800)
 
   } catch (e: any) {
+    // Marquer l'étape en cours comme erreur
+    const activeStep = progressSteps.value.find(s => s.status === 'active')
+    if (activeStep) setStepStatus(activeStep.id, 'error')
+
     error.value = e.data?.message || 'Erreur lors de la génération'
     console.error(e)
+
+    // Fermer le modal après un délai
+    setTimeout(() => {
+      showProgressModal.value = false
+    }, 2000)
   } finally {
     loading.value = false
   }
@@ -372,5 +446,99 @@ function logout() {
         </p>
       </div>
     </footer>
+
+    <!-- Modal de progression -->
+    <UModal v-model:open="showProgressModal" :closable="false">
+      <template #content>
+        <div class="p-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+              <UIcon name="i-lucide-sparkles" class="w-5 h-5 text-primary animate-pulse" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white">Génération en cours</h3>
+              <p class="text-sm text-gray-400">L'IA travaille sur votre présentation...</p>
+            </div>
+          </div>
+
+          <!-- Barre de progression globale -->
+          <div class="mb-6">
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-gray-400">Progression</span>
+              <span class="text-primary font-medium">{{ progressPercent }}%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+              <div
+                class="bg-primary h-2 rounded-full transition-all duration-500"
+                :style="{ width: `${progressPercent}%` }"
+              />
+            </div>
+          </div>
+
+          <!-- Liste des étapes -->
+          <div class="space-y-3">
+            <div
+              v-for="(step, index) in progressSteps"
+              :key="step.id"
+              class="flex items-center gap-3 p-3 rounded-lg transition-colors"
+              :class="{
+                'bg-gray-800/50': step.status === 'pending',
+                'bg-primary/10 border border-primary/30': step.status === 'active',
+                'bg-green-500/10': step.status === 'done',
+                'bg-red-500/10': step.status === 'error'
+              }"
+            >
+              <!-- Icône de statut -->
+              <div class="w-6 h-6 flex items-center justify-center">
+                <UIcon
+                  v-if="step.status === 'pending'"
+                  name="i-lucide-circle"
+                  class="w-5 h-5 text-gray-500"
+                />
+                <UIcon
+                  v-else-if="step.status === 'active'"
+                  name="i-lucide-loader-2"
+                  class="w-5 h-5 text-primary animate-spin"
+                />
+                <UIcon
+                  v-else-if="step.status === 'done'"
+                  name="i-lucide-check-circle"
+                  class="w-5 h-5 text-green-400"
+                />
+                <UIcon
+                  v-else-if="step.status === 'error'"
+                  name="i-lucide-x-circle"
+                  class="w-5 h-5 text-red-400"
+                />
+              </div>
+
+              <!-- Numéro et label -->
+              <div class="flex-1">
+                <span
+                  class="text-sm font-medium"
+                  :class="{
+                    'text-gray-500': step.status === 'pending',
+                    'text-white': step.status === 'active',
+                    'text-green-400': step.status === 'done',
+                    'text-red-400': step.status === 'error'
+                  }"
+                >
+                  {{ index + 1 }}. {{ step.label }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Message d'erreur -->
+          <UAlert
+            v-if="error"
+            color="error"
+            :title="error"
+            variant="subtle"
+            class="mt-4"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
