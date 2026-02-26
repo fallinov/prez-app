@@ -1,5 +1,7 @@
 # PREZ-APP
 
+Projet **ESIG** — contexte institutionnel, plans de cours et stack technique : voir `~/ESIG/CLAUDE.md`.
+
 > **Petit prompt, grande présentation.**
 
 Générateur de présentations HTML pédagogiques avec IA (Claude).
