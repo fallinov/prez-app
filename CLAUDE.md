@@ -240,9 +240,9 @@ npm run build  # Production
 
 ### Code style
 
-- TypeScript strict
-- Composition API Vue.js
-- Nuxt UI pour tous les composants
+- Nuxt UI pour tous les composants admin
+
+> Les conventions générales (TypeScript, Composition API, accessibilité) sont dans `~/.claude/rules/`.
 
 ## Design des slides
 
