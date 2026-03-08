@@ -25,7 +25,8 @@ export default defineNuxtConfig({
     head: {
       title: 'PREZ - Générateur de présentations',
       meta: [
-        { name: 'description', content: 'Générez des présentations pédagogiques avec l\'IA' }
+        { name: 'description', content: 'Générez des présentations pédagogiques avec l\'IA' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1' }
       ]
     }
   }
