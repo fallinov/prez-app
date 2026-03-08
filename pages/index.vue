@@ -250,6 +250,14 @@ async function generatePresentation() {
   resetProgress()
   showProgressModal.value = true
 
+  // Empêcher la mise en veille sur mobile (évite les "Load failed")
+  let wakeLock: WakeLockSentinel | null = null
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen')
+    }
+  } catch { /* Wake Lock non supporté ou refusé */ }
+
   // Créer un AbortController pour permettre l'annulation
   abortController.value = new AbortController()
 
@@ -338,7 +346,10 @@ async function generatePresentation() {
     const activeStep = progressSteps.value.find(s => s.status === 'active')
     if (activeStep) setStepStatus(activeStep.id, 'error')
 
-    error.value = e.data?.message || 'Erreur lors de la génération'
+    const isNetworkError = e.message?.includes('Load failed') || e.message?.includes('Failed to fetch') || e.message?.includes('network')
+    error.value = isNetworkError
+      ? 'Connexion perdue. Sur mobile, gardez l\'écran actif pendant la génération.'
+      : (e.data?.message || 'Erreur lors de la génération')
     console.error(e)
 
     // Fermer le modal après un délai
@@ -348,6 +359,7 @@ async function generatePresentation() {
   } finally {
     loading.value = false
     abortController.value = null
+    wakeLock?.release()
   }
 }
 
