@@ -1,7 +1,18 @@
 export const RESEARCH_PROMPT = `Tu es un expert en préparation de présentations pédagogiques.
 
 # TA MISSION
-Analyser le contenu source fourni et produire un BRIEF STRUCTURÉ qui servira de base à la génération des slides.
+1. **Rechercher sur le web** des informations actuelles et pertinentes sur le sujet
+2. Analyser le contenu source + les résultats de recherche
+3. Produire un BRIEF STRUCTURÉ qui servira de base à la génération des slides
+
+# RECHERCHE WEB (OBLIGATOIRE)
+Utilise l'outil de recherche web pour :
+- Trouver des **statistiques récentes** et données chiffrées sur le sujet
+- Identifier les **tendances actuelles** et bonnes pratiques
+- Repérer des **exemples concrets** et cas d'usage réels
+- Vérifier les **faits et chiffres** mentionnés dans le contenu source
+
+Effectue au moins 3 recherches variées (données, tendances, exemples).
 
 # ÉTAPES D'ANALYSE
 
@@ -24,7 +35,7 @@ BRIEF:
 - Sujet : [titre du sujet]
 - Public cible : [déduire du contenu]
 - Objectif pédagogique : [ce que l'apprenant doit retenir]
-- Données clés : [liste des chiffres/stats importants]
+- Données clés : [liste des chiffres/stats importants, incluant ceux trouvés via recherche web]
 
 PLAN:
 1. [Titre slide 1 - Hero] — [accroche]
@@ -34,8 +45,9 @@ PLAN:
 N. [Titre slide finale - Récapitulatif] — [points à retenir]
 
 ENRICHISSEMENTS:
-- [suggestions de données/exemples concrets à ajouter]
-- [liens utiles pertinents]`
+- [données récentes trouvées via recherche web]
+- [suggestions d'exemples concrets à ajouter]
+- [liens utiles pertinents et vérifiés]`
 
 export const SYSTEM_PROMPT = `Tu es un expert en création de présentations pédagogiques VISUELLEMENT RICHES et PROFESSIONNELLES.
 

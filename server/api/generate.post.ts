@@ -118,16 +118,34 @@ async function handleResearch(
     ? `Titre de la présentation : "${title}"\n\nContenu source :\n${prompt}`
     : prompt
 
-  console.log('🔍 Analyse et brief structuré...')
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 2048,
-    system: RESEARCH_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }]
-  })
+  console.log('🔍 Recherche web et brief structuré...')
 
-  const brief = extractText(response)
-  console.log('✅ Brief structuré créé')
+  let messages: any[] = [{ role: 'user', content: `Recherche des informations actuelles sur ce sujet, puis produis le brief structuré.\n\n${userPrompt}` }]
+  let brief = ''
+
+  // Boucle pour gérer les pause_turn (tours longs avec recherches multiples)
+  while (true) {
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: 4096,
+      system: RESEARCH_PROMPT,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as any],
+      messages
+    } as any)
+
+    brief = extractText(response)
+
+    if (response.stop_reason === 'pause_turn') {
+      // Claude n'a pas fini, on renvoie sa réponse pour qu'il continue
+      messages.push({ role: 'assistant', content: response.content })
+      messages.push({ role: 'user', content: 'Continue.' })
+      console.log('⏳ Recherche en cours...')
+    } else {
+      break
+    }
+  }
+
+  console.log('✅ Brief structuré avec recherche web créé')
 
   return { brief }
 }

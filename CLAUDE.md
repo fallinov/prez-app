@@ -33,9 +33,10 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 | Fonctionnalité | Description |
 |----------------|-------------|
 | **Triple passe IA** | Génération → Relecture → Revue UX/accessibilité |
+| **Recherche web** | Enrichissement optionnel via web search API (case à cocher) |
 | **Éditeur slide par slide** | Modifier chaque slide avec aperçu temps réel |
 | **Palette WCAG éditable** | 5 couleurs générées et modifiables |
-| **Sélecteur de modèle** | Sonnet 4, Opus 4, Haiku 3.5 |
+| **Sélecteur de modèle** | Sonnet 4.6, Opus 4.6, Haiku 4.5 |
 | **Vidéos YouTube/Vimeo** | Embed responsive avec un simple lien |
 | **Liens cliquables** | Syntaxe Markdown `[texte](url)` supportée |
 | **Icônes Lucide** | Remplacent les emojis pour un rendu pro |
@@ -47,15 +48,17 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 ```
 1. Génération Palette WCAG   (Haiku - rapide)
          ↓
-2. Génération Markdown       (Sonnet/Opus/Haiku selon choix)
+2. Recherche web (optionnel)  (web_search tool — case à cocher)
          ↓
-3. Relecture Markdown        (même modèle)
+3. Génération Markdown       (Sonnet/Opus/Haiku selon choix)
          ↓
-4. Rendu HTML                (template.ts)
+4. Relecture Markdown        (même modèle)
          ↓
-5. Revue UX/Accessibilité    (Haiku - rapide)
+5. Rendu HTML                (template.ts)
          ↓
-6. Sauvegarde (HTML + JSON metadata)
+6. Revue UX/Accessibilité    (Haiku - rapide)
+         ↓
+7. Sauvegarde (HTML + JSON metadata)
 ```
 
 ## Modèles IA disponibles

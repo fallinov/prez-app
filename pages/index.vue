@@ -29,6 +29,7 @@ const modelOptions = [
   { label: 'Claude Haiku 4.5 (Rapide)', value: 'claude-haiku-4-5-20251001' }
 ]
 const selectedModel = ref('claude-sonnet-4-6')
+const enableResearch = ref(false)
 const loading = ref(false)
 const error = ref('')
 
@@ -42,7 +43,7 @@ interface ProgressStep {
 const showProgressModal = ref(false)
 const progressSteps = ref<ProgressStep[]>([
   { id: 'palette', label: 'Génération de la palette WCAG', status: 'pending' },
-  { id: 'research', label: 'Analyse et brief structuré', status: 'pending' },
+  { id: 'research', label: 'Recherche web et brief structuré', status: 'pending' },
   { id: 'generate', label: 'Génération du contenu', status: 'pending' },
   { id: 'review', label: 'Relecture et filtres qualité', status: 'pending' },
   { id: 'render', label: 'Création du HTML', status: 'pending' },
@@ -79,6 +80,8 @@ function setStepStatus(id: string, status: ProgressStep['status']) {
 
 function resetProgress() {
   progressSteps.value.forEach(s => s.status = 'pending')
+  const researchStep = progressSteps.value.find(s => s.id === 'research')
+  if (researchStep) researchStep.label = 'Recherche web et brief structuré'
 }
 
 // Résultat
@@ -221,20 +224,29 @@ async function generatePresentation() {
     setStepStatus('palette', 'done')
     generatedPalette.value = paletteResponse.palette || null
 
-    // Étape 2 : Recherche et brief structuré
-    setStepStatus('research', 'active')
-    const researchResponse = await $fetch('/api/generate', {
-      method: 'POST',
-      body: { ...commonBody, step: 'research', prompt: prompt.value, title: title.value || 'Présentation' },
-      signal
-    })
-    setStepStatus('research', 'done')
+    // Étape 2 : Recherche web (optionnelle)
+    let researchBrief: string | undefined
+    if (enableResearch.value) {
+      setStepStatus('research', 'active')
+      const researchResponse = await $fetch('/api/generate', {
+        method: 'POST',
+        body: { ...commonBody, step: 'research', prompt: prompt.value, title: title.value || 'Présentation' },
+        signal
+      })
+      researchBrief = researchResponse.brief
+      setStepStatus('research', 'done')
+    } else {
+      // Marquer comme fait sans exécuter
+      const researchStep = progressSteps.value.find(s => s.id === 'research')
+      if (researchStep) researchStep.label = 'Recherche web (désactivée)'
+      setStepStatus('research', 'done')
+    }
 
     // Étape 3 : Génération du markdown
     setStepStatus('generate', 'active')
     const generateResponse = await $fetch('/api/generate', {
       method: 'POST',
-      body: { ...commonBody, step: 'generate', prompt: prompt.value, title: title.value || 'Présentation', brief: researchResponse.brief },
+      body: { ...commonBody, step: 'generate', prompt: prompt.value, title: title.value || 'Présentation', brief: researchBrief },
       signal
     })
     setStepStatus('generate', 'done')
@@ -483,6 +495,12 @@ function logout() {
                   </div>
                 </UFormField>
               </div>
+
+              <UCheckbox
+                v-model="enableResearch"
+                label="Recherche web"
+                description="Claude recherche des informations actuelles sur le sujet avant de générer"
+              />
 
               <UFormField label="Contenu source" name="prompt" class="w-full">
                 <UTextarea
