@@ -1,12 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { storageReadMetadata } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const IMPROVE_PROMPT = `Tu es un expert en amélioration de présentations pédagogiques au format Markdown PREZ.
 
 # TA MISSION
 Modifier le Markdown de la présentation selon les instructions de l'utilisateur.
+
+# FILTRE QUALITÉ (APPLIQUER À CHAQUE SLIDE)
+1. **"Est-ce que je dirais ça à voix haute ?"** — Le texte doit sonner naturel, comme un enseignant qui parle à sa classe
+2. **"Est-ce que cette slide mérite sa place ?"** — Chaque slide doit apporter une valeur unique avec des données concrètes
 
 # FORMAT MARKDOWN PREZ (OBLIGATOIRE)
 
@@ -37,6 +40,8 @@ Modifier le Markdown de la présentation selon les instructions de l'utilisateur
 3. **Séparateur slides** : \`---\` (3 tirets seuls sur une ligne)
 4. Conserve la structure existante sauf demande explicite
 5. Applique UNIQUEMENT les modifications demandées
+6. **Langage naturel** : Reformuler les phrases qui sonnent artificielles
+7. **Données concrètes** : Ajouter des chiffres/exemples réels si pertinent
 
 # CONTRAINTES DE DENSITÉ
 - Max 4 cartes, 3 compare, 5 steps, 4 points par slide
@@ -81,15 +86,8 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Lire les metadata de la présentation
-    const publicDir = join(process.cwd(), 'public', 'generated')
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
+    const metadata = await storageReadMetadata(filename) as PresentationMetadata | null
+    if (!metadata) {
       throw createError({
         statusCode: 404,
         message: 'Metadata non trouvée pour cette présentation. Régénérez-la d\'abord.'
@@ -107,7 +105,7 @@ export default defineEventHandler(async (event) => {
     console.log(`Instructions: ${instructions}`)
 
     const anthropic = new Anthropic({ apiKey })
-    const selectedModel = model || metadata.model || 'claude-sonnet-4-20250514'
+    const selectedModel = model || metadata.model || 'claude-sonnet-4-6'
 
     // Demander à l'IA de modifier le Markdown
     const response = await anthropic.messages.create({

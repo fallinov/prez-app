@@ -49,11 +49,11 @@ const isOverviewMode = computed(() => currentSlideIndex.value === -1)
 
 // Modèles disponibles
 const modelOptions = [
-  { label: 'Claude Sonnet 4 (Recommandé)', value: 'claude-sonnet-4-20250514' },
-  { label: 'Claude Opus 4 (Plus puissant)', value: 'claude-opus-4-20250514' },
-  { label: 'Claude Haiku 3.5 (Rapide)', value: 'claude-3-5-haiku-20241022' }
+  { label: 'Claude Sonnet 4.6 (Recommandé)', value: 'claude-sonnet-4-6' },
+  { label: 'Claude Opus 4.6 (Plus puissant)', value: 'claude-opus-4-6' },
+  { label: 'Claude Haiku 4.5 (Rapide)', value: 'claude-haiku-4-5-20251001' }
 ]
-const selectedModel = ref('claude-sonnet-4-20250514')
+const selectedModel = ref('claude-sonnet-4-6')
 
 // Slide courante
 const currentSlide = computed(() => {
@@ -374,7 +374,7 @@ watch(apiKey, (newKey) => {
           <UButton
             v-if="presentation"
             as="a"
-            :href="`/generated/${filename}`"
+            :href="`/api/presentations/view/${filename}`"
             target="_blank"
             variant="outline"
             color="neutral"

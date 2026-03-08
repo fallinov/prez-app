@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { readFile, writeFile } from 'fs/promises'
-import { join } from 'path'
 import { renderPresentation } from '../utils/template'
+import { storageReadMetadata, storageWritePresentation } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const PALETTE_PROMPT = `Tu es un expert en design système et accessibilité WCAG.
@@ -57,17 +56,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
     // Lire les metadata
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
+    const metadata = await storageReadMetadata(filename) as PresentationMetadata | null
+    if (!metadata) {
       throw createError({
         statusCode: 404,
         message: 'Metadata non trouvée pour cette présentation.'
@@ -80,7 +71,7 @@ export default defineEventHandler(async (event) => {
 
     // Générer la nouvelle palette avec Haiku (rapide et économique)
     const paletteResponse = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 256,
       system: PALETTE_PROMPT,
       messages: [
@@ -119,15 +110,10 @@ export default defineEventHandler(async (event) => {
       palette
     })
 
-    // Sauvegarder le nouveau HTML
-    const htmlPath = join(publicDir, filename)
-    await writeFile(htmlPath, html, 'utf-8')
-
-    // Mettre à jour les metadata (palette + nouvelle couleur de base)
+    // Sauvegarder le nouveau HTML et les metadata
     metadata.palette = palette
     metadata.baseColor = baseColor
-    await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
-
+    await storageWritePresentation(filename, html, metadata)
     console.log('✅ Palette régénérée et sauvegardée')
 
     return {

@@ -16,73 +16,20 @@ const user = ref<string | null>(null)
 const presentations = ref<PresentationFile[]>([])
 
 // États du formulaire - déclarés AVANT onMounted/watch
-const prompt = ref(`Créer une présentation en te basant sur ce cours :
-
-# Gestion des médias
-
-Les images (photos, schémas, dessins) sont des contenus très appréciés des visiteurs. Car comme le dit l'adage : "Un bon croquis vaut mieux qu'un long discours"
-
-Cependant, une mauvaise gestion de vos images va se ressentir sur le classement de votre site, et peut agacer vos visiteurs. Pages lourdes qui mettent des plombes à charger, et 3 secondes c'est déjà une éternité pour un internaute.
-
-Erreurs fréquentes à éviter :
-- Utiliser un mauvais format d'image
-- Images trop "lourdes" - pas compressées
-- Images trop "grandes" - pas redimensionnées
-- Nom de fichier incompréhensible (DSC00345.jpg)
-- Absence de texte alternatif
-
-## 1. Utiliser le bon format d'image
-
-- JPG (JPEG) : Idéal pour les photos, compression efficace, pas de transparence
-- PNG : Logos, graphiques, transparence, qualité sans perte
-- SVG : Icônes vectorielles, redimensionnement infini, très léger
-- GIF : Animations simples, 256 couleurs max
-- WebP : Format moderne Google, 25-35% plus léger que JPG, transparence supportée
-
-## 2. Redimensionner ses images
-
-Maximum utile : rarement plus de 1800px de large sur un site. Ne pas envoyer des images de 5000px du smartphone.
-
-Comment connaître la largeur max utile ? Inspecter la taille réelle d'affichage avec les DevTools.
-
-## 3. Compresser ses images
-
-Trouver le compromis entre taille, poids et qualité :
-- Résolution : 300 DPI → 72-96 DPI pour le web
-- Compression : 100% → 60-80% (bon compromis)
-
-Outils : compressjpeg.com, tinypng.com, squoosh.app
-Plugins WordPress : Imagify, EWWW, ShortPixel
-
-## 4. Utiliser des noms descriptifs
-
-Mauvais : DSC_004372.jpg, Photo.jpg, img_23.png
-Bon : pneu-hiver-michelin-alpin-6.jpg, asterix-bretons-couverture.jpg
-
-Règles : mots-clés, tirets (-), minuscules, pas d'accents
-
-## 5. Texte alternatif
-
-Attribut alt essentiel pour :
-- Accessibilité (liseuses d'écran)
-- SEO (robots Google)
-- Fallback si image non chargée
-
-Exemple : <img src="etang-gruere.jpg" alt="Vue de l'étang de la Gruère depuis la berge" />
-
-WordPress : remplir le champ "Texte alternatif" dans la médiathèque.`)
+const prompt = ref('')
 
 const apiKey = ref('')
 const baseColor = ref('#0073aa')
-const title = ref('Gestion des médias WordPress')
+const title = ref('')
 
 // Modèles LLM disponibles
 const modelOptions = [
-  { label: 'Claude Sonnet 4 (Recommandé)', value: 'claude-sonnet-4-20250514' },
-  { label: 'Claude Opus 4 (Plus puissant)', value: 'claude-opus-4-20250514' },
-  { label: 'Claude Haiku 3.5 (Rapide)', value: 'claude-3-5-haiku-20241022' }
+  { label: 'Claude Sonnet 4.6 (Recommandé)', value: 'claude-sonnet-4-6' },
+  { label: 'Claude Opus 4.6 (Plus puissant)', value: 'claude-opus-4-6' },
+  { label: 'Claude Haiku 4.5 (Rapide)', value: 'claude-haiku-4-5-20251001' }
 ]
-const selectedModel = ref('claude-sonnet-4-20250514')
+const selectedModel = ref('claude-sonnet-4-6')
+const enableResearch = ref(false)
 const loading = ref(false)
 const error = ref('')
 
@@ -96,8 +43,9 @@ interface ProgressStep {
 const showProgressModal = ref(false)
 const progressSteps = ref<ProgressStep[]>([
   { id: 'palette', label: 'Génération de la palette WCAG', status: 'pending' },
+  { id: 'research', label: 'Recherche web et brief structuré', status: 'pending' },
   { id: 'generate', label: 'Génération du contenu', status: 'pending' },
-  { id: 'review', label: 'Relecture et amélioration', status: 'pending' },
+  { id: 'review', label: 'Relecture et filtres qualité', status: 'pending' },
   { id: 'render', label: 'Création du HTML', status: 'pending' },
   { id: 'ux-review', label: 'Revue UX et accessibilité', status: 'pending' },
   { id: 'save', label: 'Sauvegarde', status: 'pending' }
@@ -132,6 +80,8 @@ function setStepStatus(id: string, status: ProgressStep['status']) {
 
 function resetProgress() {
   progressSteps.value.forEach(s => s.status = 'pending')
+  const researchStep = progressSteps.value.find(s => s.id === 'research')
+  if (researchStep) researchStep.label = 'Recherche web et brief structuré'
 }
 
 // Résultat
@@ -249,56 +199,73 @@ async function generatePresentation() {
   resetProgress()
   showProgressModal.value = true
 
+  // Empêcher la mise en veille sur mobile (évite les "Load failed")
+  let wakeLock: WakeLockSentinel | null = null
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen')
+    }
+  } catch { /* Wake Lock non supporté ou refusé */ }
+
   // Créer un AbortController pour permettre l'annulation
   abortController.value = new AbortController()
 
   try {
-    // Étape 1 : Génération du contenu
-    // Étape 1 : Génération palette + contenu (l'API fait palette → génération → relecture)
+    const signal = abortController.value.signal
+    const commonBody = { apiKey: apiKey.value, model: selectedModel.value }
+
+    // Étape 1 : Palette WCAG
     setStepStatus('palette', 'active')
-
-    const generatePromise = $fetch('/api/generate', {
+    const paletteResponse = await $fetch('/api/generate', {
       method: 'POST',
-      body: {
-        prompt: prompt.value,
-        apiKey: apiKey.value,
-        title: title.value || 'Présentation',
-        model: selectedModel.value,
-        baseColor: baseColor.value
-      },
-      signal: abortController.value.signal
+      body: { ...commonBody, step: 'palette', baseColor: baseColor.value },
+      signal
     })
-
-    // Progression simulée : palette (1s) → génération (2s) → relecture
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('palette', 'done')
-        setStepStatus('generate', 'active')
-      }
-    }, 1000)
-
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('generate', 'done')
-        setStepStatus('review', 'active')
-      }
-    }, 4000)
-
-    const mdResponse = await generatePromise
-
     setStepStatus('palette', 'done')
+    generatedPalette.value = paletteResponse.palette || null
+
+    // Étape 2 : Recherche web (optionnelle)
+    let researchBrief: string | undefined
+    if (enableResearch.value) {
+      setStepStatus('research', 'active')
+      const researchResponse = await $fetch('/api/generate', {
+        method: 'POST',
+        body: { ...commonBody, step: 'research', prompt: prompt.value, title: title.value || 'Présentation' },
+        signal
+      })
+      researchBrief = researchResponse.brief
+      setStepStatus('research', 'done')
+    } else {
+      // Marquer comme fait sans exécuter
+      const researchStep = progressSteps.value.find(s => s.id === 'research')
+      if (researchStep) researchStep.label = 'Recherche web (désactivée)'
+      setStepStatus('research', 'done')
+    }
+
+    // Étape 3 : Génération du markdown
+    setStepStatus('generate', 'active')
+    const generateResponse = await $fetch('/api/generate', {
+      method: 'POST',
+      body: { ...commonBody, step: 'generate', prompt: prompt.value, title: title.value || 'Présentation', brief: researchBrief },
+      signal
+    })
     setStepStatus('generate', 'done')
+
+    // Étape 4 : Relecture
+    setStepStatus('review', 'active')
+    const reviewResponse = await $fetch('/api/generate', {
+      method: 'POST',
+      body: { ...commonBody, step: 'review', markdown: generateResponse.markdown },
+      signal
+    })
     setStepStatus('review', 'done')
 
-    generatedMarkdown.value = mdResponse.markdown
-    slides.value = mdResponse.slides
-    generatedPalette.value = mdResponse.palette || null
+    generatedMarkdown.value = reviewResponse.markdown
+    slides.value = reviewResponse.slides
 
-    // Étape 4 : Création du HTML
+    // Étape 5 : Création du HTML + revue UX
     setStepStatus('render', 'active')
-
-    // L'API fait render + revue UX (avec la palette générée)
-    const renderPromise = $fetch('/api/render', {
+    const htmlResponse = await $fetch('/api/render', {
       method: 'POST',
       body: {
         markdown: generatedMarkdown.value,
@@ -308,26 +275,16 @@ async function generatePresentation() {
         apiKey: apiKey.value,
         palette: generatedPalette.value,
         model: selectedModel.value
-      }
+      },
+      signal
     })
-
-    // Après 1s, passer à l'étape revue UX
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('render', 'done')
-        setStepStatus('ux-review', 'active')
-      }
-    }, 1000)
-
-    const htmlResponse = await renderPromise
-
     setStepStatus('render', 'done')
     setStepStatus('ux-review', 'done')
 
     generatedHtml.value = htmlResponse.html
     generatedUrl.value = htmlResponse.url
 
-    // Étape 5 : Sauvegarde
+    // Étape 6 : Sauvegarde
     setStepStatus('save', 'active')
     await loadPresentations()
     setStepStatus('save', 'done')
@@ -347,7 +304,15 @@ async function generatePresentation() {
     const activeStep = progressSteps.value.find(s => s.status === 'active')
     if (activeStep) setStepStatus(activeStep.id, 'error')
 
-    error.value = e.data?.message || 'Erreur lors de la génération'
+    const isNetworkError = e.message?.includes('Load failed') || e.message?.includes('Failed to fetch') || e.message?.includes('network')
+    const isTimeout = e.statusCode === 504 || e.data?.message?.includes('FUNCTION_INVOCATION_TIMEOUT')
+    if (isTimeout) {
+      error.value = 'La fonction serveur a expiré (timeout). Essayez avec un prompt plus court ou désactivez la recherche web.'
+    } else if (isNetworkError) {
+      error.value = 'Connexion perdue — timeout probable du serveur. Sur mobile, gardez l\'écran actif pendant la génération.'
+    } else {
+      error.value = e.data?.message || 'Erreur lors de la génération'
+    }
     console.error(e)
 
     // Fermer le modal après un délai
@@ -357,6 +322,7 @@ async function generatePresentation() {
   } finally {
     loading.value = false
     abortController.value = null
+    wakeLock?.release()
   }
 }
 
@@ -382,6 +348,71 @@ function downloadHtml() {
   a.download = `${title.value || 'presentation'}.html`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// Supprimer une présentation
+const deletingFilename = ref<string | null>(null)
+
+async function deletePresentation(pres: PresentationFile) {
+  if (!confirm(`Supprimer « ${pres.title} » ?`)) return
+  deletingFilename.value = pres.filename
+  try {
+    await $fetch(`/api/presentations/${pres.filename}`, { method: 'DELETE' })
+    await loadPresentations()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors de la suppression'
+  } finally {
+    deletingFilename.value = null
+  }
+}
+
+// Télécharger une présentation existante
+async function downloadPresentation(pres: PresentationFile) {
+  try {
+    const response = await $fetch(`/api/presentations/${pres.filename}`)
+    const blob = new Blob([response.html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = pres.filename
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors du téléchargement'
+  }
+}
+
+// Régénérer le HTML d'une présentation existante (avec le template actuel)
+const regeneratingFilename = ref<string | null>(null)
+
+async function regeneratePresentation(pres: PresentationFile) {
+  regeneratingFilename.value = pres.filename
+  error.value = ''
+
+  try {
+    // Charger les metadata de la présentation
+    const data = await $fetch(`/api/presentations/${pres.filename}`)
+    const meta = data.metadata
+
+    // Re-rendre avec le template actuel (sans revue IA = pas besoin de clé API)
+    const renderResponse = await $fetch('/api/render', {
+      method: 'POST',
+      body: {
+        markdown: meta.markdown,
+        slides: data.slides,
+        baseColor: meta.baseColor,
+        title: meta.title,
+        palette: meta.palette,
+        model: meta.model
+      }
+    })
+
+    await loadPresentations()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors de la régénération'
+  } finally {
+    regeneratingFilename.value = null
+  }
 }
 
 // Formater la taille du fichier
@@ -469,6 +500,12 @@ function logout() {
                   </div>
                 </UFormField>
               </div>
+
+              <UCheckbox
+                v-model="enableResearch"
+                label="Recherche web"
+                description="Claude recherche des informations actuelles sur le sujet avant de générer"
+              />
 
               <UFormField label="Contenu source" name="prompt" class="w-full">
                 <UTextarea
@@ -568,28 +605,59 @@ function logout() {
               <div
                 v-for="pres in presentations"
                 :key="pres.filename"
-                class="p-3 hover:bg-muted-50 transition-colors group"
+                class="p-3 hover:bg-muted-50 transition-colors"
               >
-                <a
-                  :href="pres.url"
-                  target="_blank"
-                  class="block font-medium text-sm text-muted-900 hover:text-accent truncate"
-                >
+                <div class="font-medium text-sm text-muted-900 truncate">
                   {{ pres.title }}
-                </a>
-                <div class="text-xs text-muted-400 mt-1 flex justify-between items-center">
-                  <span>{{ pres.date }}</span>
-                  <div class="flex items-center gap-1">
-                    <span class="text-muted-300">{{ formatSize(pres.size) }}</span>
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      color="neutral"
-                      icon="i-lucide-pencil"
-                      :to="`/editor/${pres.filename}`"
-                      class="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
+                </div>
+                <div class="text-xs text-muted-400 mt-1">
+                  {{ pres.date }} · {{ formatSize(pres.size) }}
+                </div>
+                <div class="flex items-center gap-1 mt-2">
+                  <UButton
+                    as="a"
+                    :href="`/api/presentations/view/${pres.filename}`"
+                    target="_blank"
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-maximize"
+                    title="Ouvrir en plein écran"
+                  />
+                  <UButton
+                    :to="`/editor/${pres.filename}`"
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-pencil"
+                    title="Modifier"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    title="Télécharger"
+                    @click="downloadPresentation(pres)"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-refresh-cw"
+                    title="Régénérer le HTML"
+                    :loading="regeneratingFilename === pres.filename"
+                    @click="regeneratePresentation(pres)"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                    title="Supprimer"
+                    :loading="deletingFilename === pres.filename"
+                    @click="deletePresentation(pres)"
+                  />
                 </div>
               </div>
             </div>

@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { renderPresentation } from '../utils/template'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { storageWritePresentation } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const HTML_REVIEW_PROMPT = `Tu es un expert en HTML/CSS, UX et accessibilité pour présentations pédagogiques projetées en salle de classe.
@@ -110,7 +109,7 @@ export default defineEventHandler(async (event) => {
 
         // Utiliser Haiku pour la revue (rapide et économique)
         const reviewResponse = await anthropic.messages.create({
-          model: 'claude-3-5-haiku-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 8192,
           system: HTML_REVIEW_PROMPT,
           messages: [
@@ -139,37 +138,26 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Sauvegarder dans public/generated/
+    // Sauvegarder (Vercel Blob ou filesystem local)
     const filename = generateFilename(title)
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
-    // Créer le dossier si nécessaire
-    await mkdir(publicDir, { recursive: true })
-
-    const filepath = join(publicDir, filename)
-    await writeFile(filepath, html, 'utf-8')
-
-    // Sauvegarder les metadata JSON (pour modifications futures)
-    const metadataFilename = filename.replace('.html', '.json')
     const metadata: PresentationMetadata = {
       title: title || 'Présentation',
       markdown: markdown || '',
       baseColor: baseColor || '#0073aa',
       palette: palette || null,
-      model: model || 'claude-sonnet-4-20250514',
+      model: model || 'claude-sonnet-4-6',
       createdAt: new Date().toISOString()
     }
-    await writeFile(join(publicDir, metadataFilename), JSON.stringify(metadata, null, 2), 'utf-8')
 
-    const url = `/generated/${filename}`
-    console.log(`✅ Présentation sauvegardée: ${url}`)
+    const { htmlUrl } = await storageWritePresentation(filename, html, metadata)
+    console.log(`✅ Présentation sauvegardée: ${htmlUrl}`)
 
-    return { html, url, filename }
+    return { html, url: htmlUrl, filename }
   } catch (error: any) {
     console.error('Erreur rendu:', error)
     throw createError({
       statusCode: 500,
-      message: 'Erreur lors du rendu'
+      message: error.message || 'Erreur lors du rendu'
     })
   }
 })

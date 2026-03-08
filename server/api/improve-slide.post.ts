@@ -1,13 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { readFile, writeFile } from 'fs/promises'
-import { join } from 'path'
 import { renderPresentation } from '../utils/template'
+import { storageReadMetadata, storageWritePresentation } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const SLIDE_IMPROVE_PROMPT = `Tu modifies UN SEUL slide d'une présentation pédagogique au format Markdown PREZ.
 
 # TA MISSION
 Modifier le contenu du slide selon les instructions de l'utilisateur.
+
+# FILTRE QUALITÉ
+1. **"Est-ce que je dirais ça à voix haute ?"** — Le texte doit sonner naturel et oral
+2. **"Est-ce que cette slide mérite sa place ?"** — Le contenu doit apporter une valeur concrète avec des données réelles
 
 # FORMAT MARKDOWN PREZ (OBLIGATOIRE)
 
@@ -77,6 +80,8 @@ NE PAS utiliser de balises HTML ou d'URLs d'images.
 2. **Mise en valeur** : Utiliser **gras** (pas de style inline)
 3. **Conserve la structure** : Garder les blocs ::: existants si pertinents
 4. **Densité** : Max 4 cartes, 3 compare, 5 steps, 4 points
+5. **Langage naturel** : Reformuler ce qui sonne artificiel ou trop écrit
+6. **Données concrètes** : Inclure des chiffres et exemples réels
 
 # FORMAT DE SORTIE
 
@@ -120,17 +125,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
     // Lire les metadata
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
+    const metadata = await storageReadMetadata(filename) as PresentationMetadata | null
+    if (!metadata) {
       throw createError({
         statusCode: 404,
         message: 'Metadata non trouvée pour cette présentation.'
@@ -159,7 +156,7 @@ export default defineEventHandler(async (event) => {
     console.log(`Instructions: ${instructions}`)
 
     const anthropic = new Anthropic({ apiKey })
-    const selectedModel = model || metadata.model || 'claude-sonnet-4-20250514'
+    const selectedModel = model || metadata.model || 'claude-sonnet-4-6'
 
     // Demander à l'IA de modifier le slide
     const response = await anthropic.messages.create({
@@ -196,14 +193,9 @@ export default defineEventHandler(async (event) => {
       palette: metadata.palette || undefined
     })
 
-    // Sauvegarder le HTML
-    const htmlPath = join(publicDir, filename)
-    await writeFile(htmlPath, html, 'utf-8')
-
-    // Mettre à jour les metadata
+    // Sauvegarder le HTML et les metadata
     metadata.markdown = newMarkdown
-    await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
-
+    await storageWritePresentation(filename, html, metadata)
     console.log(`✅ Slide ${slideIndex + 1} modifié et sauvegardé`)
 
     return {
