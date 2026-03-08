@@ -279,6 +279,120 @@ export function renderPresentation(options: RenderOptions): string {
             gap: 0.5rem;
         }
         .high-contrast .contrast-indicator { display: flex; }
+
+        /* ===== MOBILE : Slides plein écran sans scroll ===== */
+        @media (max-width: 767px) {
+            html, body {
+                overflow: hidden;
+                height: 100vh;
+                height: 100dvh;
+            }
+            body {
+                scroll-snap-type: y mandatory;
+                overflow-y: auto;
+            }
+            .slide {
+                height: 100vh;
+                height: 100dvh;
+                min-height: 100vh;
+                min-height: 100dvh;
+                max-height: 100vh;
+                max-height: 100dvh;
+                overflow: hidden;
+                position: relative;
+            }
+            .slide-content-wrapper {
+                padding-top: 1.5rem;
+                padding-bottom: 1rem;
+                height: calc(100vh - 0px);
+                height: calc(100dvh - 0px);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .slide-content-wrapper .slide-content {
+                flex: 1;
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            /* Réduire les tailles de police */
+            .slide h1 { font-size: 1.75rem !important; line-height: 1.2; margin-bottom: 0.5rem; }
+            .slide h2 { font-size: 1.35rem !important; line-height: 1.2; margin-bottom: 0.5rem; }
+            .slide h3 { font-size: 1.1rem !important; }
+            .slide p { font-size: 0.85rem !important; line-height: 1.4; margin-bottom: 0.25rem; }
+            .slide li { font-size: 0.85rem !important; line-height: 1.3; }
+            .slide .text-lg { font-size: 0.85rem !important; }
+            .slide .text-xl { font-size: 1rem !important; }
+            .slide .text-2xl { font-size: 1.15rem !important; }
+            .slide .text-4xl { font-size: 1.35rem !important; }
+            .slide .text-5xl { font-size: 1.75rem !important; }
+            .slide .text-7xl { font-size: 2rem !important; }
+
+            /* Réduire les espacements */
+            .slide .mb-6 { margin-bottom: 0.5rem !important; }
+            .slide .mb-4 { margin-bottom: 0.35rem !important; }
+            .slide .mt-8 { margin-top: 0.75rem !important; }
+            .slide .mt-16 { margin-top: 1rem !important; }
+            .slide .p-5, .slide .p-6 { padding: 0.6rem !important; }
+            .slide .p-4 { padding: 0.5rem !important; }
+            .slide .gap-8 { gap: 0.5rem !important; }
+            .slide .gap-4 { gap: 0.35rem !important; }
+            .slide .gap-3 { gap: 0.25rem !important; }
+            .slide .space-y-3 > * + * { margin-top: 0.25rem !important; }
+            .slide .space-y-1 > * + * { margin-top: 0.15rem !important; }
+            .slide .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+            /* Grilles: toujours 2 colonnes max sur mobile */
+            .slide .grid.md\\:grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
+
+            /* Cartes plus compactes */
+            .slide .rounded-2xl { border-radius: 0.75rem; }
+            .slide .w-12 { width: 2rem !important; }
+            .slide .h-12 { height: 2rem !important; }
+            .slide .w-10 { width: 2rem !important; }
+            .slide .h-10 { height: 2rem !important; }
+            .slide .w-8 { width: 1.5rem !important; }
+            .slide .h-8 { height: 1.5rem !important; }
+
+            /* Code blocks compacts */
+            .slide .code-block { padding: 0.5rem 0.75rem; font-size: 0.7rem; }
+
+            /* Section label plus petit */
+            .slide .font-mono.text-base { font-size: 0.75rem !important; margin-bottom: 0.25rem !important; }
+
+            /* Hero slide ajustements */
+            .slide.gradient-accent .text-center { padding: 0 1rem; }
+            .slide .animate-pulse-slow { margin-top: 1rem !important; }
+            .slide .blur-3xl { display: none; }
+
+            /* Tags hero plus petits */
+            .slide .px-4.py-2 { padding: 0.35rem 0.75rem !important; font-size: 0.75rem !important; }
+
+            /* Cacher nav dots sur mobile (on utilise le swipe) */
+            nav.fixed { display: none !important; }
+
+            /* Footer compact */
+            footer { padding: 0.5rem !important; }
+            footer p { font-size: 0.7rem !important; }
+
+            /* Indicateur swipe mobile */
+            .mobile-swipe-hint {
+                position: fixed;
+                bottom: 0.75rem;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 0.35rem 0.75rem;
+                background: rgba(0,0,0,0.6);
+                color: white;
+                font-size: 0.7rem;
+                border-radius: 9999px;
+                z-index: 100;
+                backdrop-filter: blur(8px);
+                pointer-events: none;
+                transition: opacity 0.3s;
+            }
+        }
     </style>
 </head>
 <body class="font-sans overflow-x-hidden">
@@ -301,7 +415,12 @@ export function renderPresentation(options: RenderOptions): string {
     </footer>
 
     <!-- Indicateur mode contraste -->
-    <div class="contrast-indicator">Contraste élevé (C)</div>`}
+    <div class="contrast-indicator">Contraste élevé (C)</div>
+
+    <!-- Indicateur swipe mobile -->
+    <div class="mobile-swipe-hint" id="swipeHint">
+        Glisser pour naviguer
+    </div>`}
 
     <script>
         // Navigation state
@@ -396,6 +515,92 @@ export function renderPresentation(options: RenderOptions): string {
                 setTimeout(initLucideIcons, 100);
             }
         }
+
+        // ===== Navigation tactile (swipe) pour mobile =====
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const SWIPE_THRESHOLD = 50;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            // Ignorer les gestes trop courts
+            if (Math.max(absDx, absDy) < SWIPE_THRESHOLD) return;
+
+            if (absDy > absDx) {
+                // Swipe vertical
+                if (dy < 0) nextSlide();  // Swipe vers le haut = slide suivante
+                else prevSlide();          // Swipe vers le bas = slide précédente
+            } else {
+                // Swipe horizontal
+                if (dx < 0) nextSlide();  // Swipe vers la gauche = slide suivante
+                else prevSlide();          // Swipe vers la droite = slide précédente
+            }
+        }
+
+        // Masquer le hint swipe après la première navigation
+        let swipeHintShown = true;
+        function hideSwipeHint() {
+            if (!swipeHintShown) return;
+            swipeHintShown = false;
+            const hint = document.getElementById('swipeHint');
+            if (hint) hint.style.opacity = '0';
+            setTimeout(() => { if (hint) hint.style.display = 'none'; }, 300);
+        }
+
+        // Cacher le hint après le premier swipe ou après 4 secondes
+        const origNext = nextSlide;
+        const origPrev = prevSlide;
+        // Wrap pour détecter la première navigation
+        document.addEventListener('touchend', hideSwipeHint, { once: true });
+        setTimeout(hideSwipeHint, 4000);
+
+        // ===== Empêcher le scroll natif sur mobile =====
+        if ('ontouchstart' in window) {
+            document.body.style.overflow = 'hidden';
+            // Permettre uniquement le snap scroll via goToSlide
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+        }
+
+        // ===== Auto-scaling : réduire le contenu qui déborde =====
+        function autoScaleSlides() {
+            if (window.innerWidth >= 768) return; // Desktop uniquement via CSS
+            const vh = window.innerHeight;
+            sections.forEach(section => {
+                const wrapper = section.querySelector('.slide-content-wrapper');
+                if (!wrapper) return;
+                // Reset scale
+                wrapper.style.transform = '';
+                wrapper.style.transformOrigin = 'top left';
+                const contentHeight = wrapper.scrollHeight;
+                if (contentHeight > vh) {
+                    const scale = Math.max(0.55, vh / contentHeight);
+                    wrapper.style.transform = 'scale(' + scale + ')';
+                    wrapper.style.width = (100 / scale) + '%';
+                }
+            });
+        }
+        // Exécuter après le rendu des icônes Lucide
+        setTimeout(autoScaleSlides, 300);
+        window.addEventListener('resize', autoScaleSlides);
 
         // Lancer au chargement du DOM
         if (document.readyState === 'loading') {
