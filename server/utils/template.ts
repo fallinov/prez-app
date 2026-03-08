@@ -502,17 +502,10 @@ function parseContent(content: string): string {
     return `{{CODE_${codeBlocks.length - 1}}}`
   })
 
-  // Parser les blocs spéciaux :::type ... :::
-  // Protéger le HTML rendu des blocs spéciaux avec des placeholders
-  // pour éviter que le wrapping paragraphes ne casse le HTML
+  // Parser les blocs spéciaux :::type ... ::: en protégeant le HTML rendu
+  // avec des placeholders pour éviter que le wrapping paragraphes ne casse le HTML
   const renderedBlocks: string[] = []
-  html = parseSpecialBlocks(html)
-
-  // Protéger les blocs HTML multi-lignes (div, section, ol, etc.) avant le wrapping paragraphes
-  html = html.replace(/<(div|section|ol|ul|figure|blockquote|nav)\b[\s\S]*?<\/\1>/g, (match) => {
-    renderedBlocks.push(match)
-    return `{{BLOCK_${renderedBlocks.length - 1}}}`
-  })
+  html = parseSpecialBlocks(html, renderedBlocks)
 
   // Paragraphes simples (lignes non traitées)
   html = html.split('\n').map(line => {
@@ -541,52 +534,58 @@ function parseContent(content: string): string {
 /**
  * Parse les blocs spéciaux :::type
  */
-function parseSpecialBlocks(content: string): string {
+function parseSpecialBlocks(content: string, renderedBlocks: string[]): string {
   let html = content
+
+  // Helper: stocker le HTML rendu comme placeholder pour éviter la corruption par le wrapping paragraphes
+  const protect = (rendered: string): string => {
+    renderedBlocks.push(rendered)
+    return `{{BLOCK_${renderedBlocks.length - 1}}}`
+  }
 
   // Layout 2 colonnes: :::intro + :::sidebar consécutifs
   html = html.replace(/:::intro\n([\s\S]*?):::\s*\n\s*:::sidebar\s+(.+?)\n([\s\S]*?):::/g, (_, intro, sidebarTitle, sidebarContent) => {
-    return renderTwoColumnLayout(intro.trim(), sidebarTitle.trim(), sidebarContent.trim())
+    return protect(renderTwoColumnLayout(intro.trim(), sidebarTitle.trim(), sidebarContent.trim()))
   })
 
   // :::intro seul (si pas déjà traité)
   html = html.replace(/:::intro\n([\s\S]*?):::/g, (_, inner) => {
-    return renderIntroBlock(inner.trim())
+    return protect(renderIntroBlock(inner.trim()))
   })
 
   // :::sidebar seul (si pas déjà traité)
   html = html.replace(/:::sidebar\s+(.+?)\n([\s\S]*?):::/g, (_, title, inner) => {
-    return renderSidebarBlock(title.trim(), inner.trim())
+    return protect(renderSidebarBlock(title.trim(), inner.trim()))
   })
 
   // :::cards ... :::
   html = html.replace(/:::cards\n([\s\S]*?):::/g, (_, inner) => {
-    return renderCardsBlock(inner.trim())
+    return protect(renderCardsBlock(inner.trim()))
   })
 
   // :::compare ... :::
   html = html.replace(/:::compare\n([\s\S]*?):::/g, (_, inner) => {
-    return renderCompareBlock(inner.trim())
+    return protect(renderCompareBlock(inner.trim()))
   })
 
   // :::stats ... :::
   html = html.replace(/:::stats\n([\s\S]*?):::/g, (_, inner) => {
-    return renderStatsBlock(inner.trim())
+    return protect(renderStatsBlock(inner.trim()))
   })
 
   // :::steps ... :::
   html = html.replace(/:::steps\n([\s\S]*?):::/g, (_, inner) => {
-    return renderStepsBlock(inner.trim())
+    return protect(renderStepsBlock(inner.trim()))
   })
 
   // :::points ... :::
   html = html.replace(/:::points\n([\s\S]*?):::/g, (_, inner) => {
-    return renderPointsBlock(inner.trim())
+    return protect(renderPointsBlock(inner.trim()))
   })
 
   // :::tip ... :::
   html = html.replace(/:::tip\n([\s\S]*?):::/g, (_, inner) => {
-    return renderTipBlock(inner.trim())
+    return protect(renderTipBlock(inner.trim()))
   })
 
   // :::image - DÉSACTIVÉ (les images sont retirées pour le moment)
@@ -597,7 +596,7 @@ function parseSpecialBlocks(content: string): string {
   // :::video url:::
   // Format: :::video https://youtube.com/watch?v=xxx:::
   html = html.replace(/:::video\s+(.+?):::/g, (_, url) => {
-    return renderVideoBlock(url.trim())
+    return protect(renderVideoBlock(url.trim()))
   })
 
   return html
