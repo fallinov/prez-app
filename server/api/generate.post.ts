@@ -124,18 +124,19 @@ async function handleResearch(
   let brief = ''
 
   // Boucle pour gérer les pause_turn (tours longs avec recherches multiples)
-  while (true) {
+  const MAX_TURNS = 3
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
     const response = await anthropic.messages.create({
       model,
       max_tokens: 4096,
       system: RESEARCH_PROMPT,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 } as any],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 } as any],
       messages
     } as any)
 
     brief = extractText(response)
 
-    if (response.stop_reason === 'pause_turn') {
+    if (response.stop_reason === 'pause_turn' && turn < MAX_TURNS - 1) {
       // Claude n'a pas fini, on renvoie sa réponse pour qu'il continue
       messages.push({ role: 'assistant', content: response.content })
       messages.push({ role: 'user', content: 'Continue.' })

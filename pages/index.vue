@@ -305,9 +305,14 @@ async function generatePresentation() {
     if (activeStep) setStepStatus(activeStep.id, 'error')
 
     const isNetworkError = e.message?.includes('Load failed') || e.message?.includes('Failed to fetch') || e.message?.includes('network')
-    error.value = isNetworkError
-      ? 'Connexion perdue. Sur mobile, gardez l\'écran actif pendant la génération.'
-      : (e.data?.message || 'Erreur lors de la génération')
+    const isTimeout = e.statusCode === 504 || e.data?.message?.includes('FUNCTION_INVOCATION_TIMEOUT')
+    if (isTimeout) {
+      error.value = 'La fonction serveur a expiré (timeout). Essayez avec un prompt plus court ou désactivez la recherche web.'
+    } else if (isNetworkError) {
+      error.value = 'Connexion perdue — timeout probable du serveur. Sur mobile, gardez l\'écran actif pendant la génération.'
+    } else {
+      error.value = e.data?.message || 'Erreur lors de la génération'
+    }
     console.error(e)
 
     // Fermer le modal après un délai
