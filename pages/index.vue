@@ -16,65 +16,11 @@ const user = ref<string | null>(null)
 const presentations = ref<PresentationFile[]>([])
 
 // États du formulaire - déclarés AVANT onMounted/watch
-const prompt = ref(`Créer une présentation en te basant sur ce cours :
-
-# Gestion des médias
-
-Les images (photos, schémas, dessins) sont des contenus très appréciés des visiteurs. Car comme le dit l'adage : "Un bon croquis vaut mieux qu'un long discours"
-
-Cependant, une mauvaise gestion de vos images va se ressentir sur le classement de votre site, et peut agacer vos visiteurs. Pages lourdes qui mettent des plombes à charger, et 3 secondes c'est déjà une éternité pour un internaute.
-
-Erreurs fréquentes à éviter :
-- Utiliser un mauvais format d'image
-- Images trop "lourdes" - pas compressées
-- Images trop "grandes" - pas redimensionnées
-- Nom de fichier incompréhensible (DSC00345.jpg)
-- Absence de texte alternatif
-
-## 1. Utiliser le bon format d'image
-
-- JPG (JPEG) : Idéal pour les photos, compression efficace, pas de transparence
-- PNG : Logos, graphiques, transparence, qualité sans perte
-- SVG : Icônes vectorielles, redimensionnement infini, très léger
-- GIF : Animations simples, 256 couleurs max
-- WebP : Format moderne Google, 25-35% plus léger que JPG, transparence supportée
-
-## 2. Redimensionner ses images
-
-Maximum utile : rarement plus de 1800px de large sur un site. Ne pas envoyer des images de 5000px du smartphone.
-
-Comment connaître la largeur max utile ? Inspecter la taille réelle d'affichage avec les DevTools.
-
-## 3. Compresser ses images
-
-Trouver le compromis entre taille, poids et qualité :
-- Résolution : 300 DPI → 72-96 DPI pour le web
-- Compression : 100% → 60-80% (bon compromis)
-
-Outils : compressjpeg.com, tinypng.com, squoosh.app
-Plugins WordPress : Imagify, EWWW, ShortPixel
-
-## 4. Utiliser des noms descriptifs
-
-Mauvais : DSC_004372.jpg, Photo.jpg, img_23.png
-Bon : pneu-hiver-michelin-alpin-6.jpg, asterix-bretons-couverture.jpg
-
-Règles : mots-clés, tirets (-), minuscules, pas d'accents
-
-## 5. Texte alternatif
-
-Attribut alt essentiel pour :
-- Accessibilité (liseuses d'écran)
-- SEO (robots Google)
-- Fallback si image non chargée
-
-Exemple : <img src="etang-gruere.jpg" alt="Vue de l'étang de la Gruère depuis la berge" />
-
-WordPress : remplir le champ "Texte alternatif" dans la médiathèque.`)
+const prompt = ref('')
 
 const apiKey = ref('')
 const baseColor = ref('#0073aa')
-const title = ref('Gestion des médias WordPress')
+const title = ref('')
 
 // Modèles LLM disponibles
 const modelOptions = [
