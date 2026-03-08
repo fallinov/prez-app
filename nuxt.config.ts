@@ -13,6 +13,14 @@ export default defineNuxtConfig({
     allowedEmails: process.env.ALLOWED_EMAILS || 'steve@esig.ch',
   },
 
+  nitro: {
+    vercel: {
+      functions: {
+        maxDuration: 60
+      }
+    }
+  },
+
   app: {
     head: {
       title: 'PREZ - Générateur de présentations',
