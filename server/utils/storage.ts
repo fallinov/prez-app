@@ -1,7 +1,7 @@
 /**
  * Storage abstraction — Vercel Blob (production) ou filesystem local (dev).
  *
- * En production (BLOB_READ_WRITE_TOKEN présent) : utilise @vercel/blob.
+ * En production (BLOB_READ_WRITE_TOKEN ou prez_READ_WRITE_TOKEN présent) : utilise @vercel/blob.
  * En dev : utilise le filesystem local dans public/generated/.
  */
 
@@ -10,20 +10,21 @@ import { readFile, writeFile, mkdir, readdir, stat } from 'fs/promises'
 import { join } from 'path'
 
 const BLOB_PREFIX = 'presentations/'
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || process.env.prez_READ_WRITE_TOKEN
 
 function isVercel(): boolean {
   return !!process.env.VERCEL
 }
 
 function useBlob(): boolean {
-  return !!process.env.BLOB_READ_WRITE_TOKEN
+  return !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.prez_READ_WRITE_TOKEN)
 }
 
 function ensureStorage(): void {
   if (isVercel() && !useBlob()) {
     throw new Error(
-      'BLOB_READ_WRITE_TOKEN manquant. Ajoutez un Blob Store dans votre projet Vercel : ' +
-      'Dashboard → Storage → Create → Blob → Connecter au projet.'
+      'Blob token manquant (BLOB_READ_WRITE_TOKEN ou prez_READ_WRITE_TOKEN). ' +
+      'Ajoutez un Blob Store dans votre projet Vercel : Dashboard → Storage → Create → Blob → Connecter au projet.'
     )
   }
 }
@@ -41,7 +42,8 @@ export async function storageWrite(filename: string, content: string, contentTyp
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
-      contentType
+      contentType,
+      token: BLOB_TOKEN
     })
     return result.url
   }
@@ -59,7 +61,7 @@ export async function storageRead(filename: string): Promise<string | null> {
   ensureStorage()
   if (useBlob()) {
     try {
-      const result = await blobGet(`${BLOB_PREFIX}${filename}`, { access: 'public' })
+      const result = await blobGet(`${BLOB_PREFIX}${filename}`, { access: 'public', token: BLOB_TOKEN })
       if (!result || result.statusCode === 304) return null
       const reader = result.stream.getReader()
       const chunks: Uint8Array[] = []
@@ -86,7 +88,7 @@ export async function storageRead(filename: string): Promise<string | null> {
 
 export async function storageDelete(filename: string): Promise<void> {
   if (useBlob()) {
-    await blobDel(`${BLOB_PREFIX}${filename}`)
+    await blobDel(`${BLOB_PREFIX}${filename}`, { token: BLOB_TOKEN })
     return
   }
 
@@ -118,7 +120,8 @@ export async function storageList(): Promise<StorageFile[]> {
     do {
       const result = await blobList({
         prefix: BLOB_PREFIX,
-        cursor
+        cursor,
+        token: BLOB_TOKEN
       })
 
       for (const blob of result.blobs) {
