@@ -374,7 +374,7 @@ watch(apiKey, (newKey) => {
           <UButton
             v-if="presentation"
             as="a"
-            :href="`/generated/${filename}`"
+            :href="`/api/presentations/view/${filename}`"
             target="_blank"
             variant="outline"
             color="neutral"
