@@ -285,7 +285,7 @@ export function renderPresentation(options: RenderOptions): string {
             html, body {
                 overflow: hidden;
                 height: 100vh;
-                height: 100dvh;
+                height: 100svh;
             }
             body {
                 scroll-snap-type: y mandatory;
@@ -293,19 +293,20 @@ export function renderPresentation(options: RenderOptions): string {
             }
             .slide {
                 height: 100vh;
-                height: 100dvh;
+                height: 100svh;
                 min-height: 100vh;
-                min-height: 100dvh;
+                min-height: 100svh;
                 max-height: 100vh;
-                max-height: 100dvh;
+                max-height: 100svh;
                 overflow: hidden;
                 position: relative;
+                scroll-snap-stop: always;
             }
             .slide-content-wrapper {
                 padding-top: 1.5rem;
                 padding-bottom: 1rem;
-                height: calc(100vh - 0px);
-                height: calc(100dvh - 0px);
+                height: 100vh;
+                height: 100svh;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
@@ -565,9 +566,6 @@ export function renderPresentation(options: RenderOptions): string {
         }
 
         // Cacher le hint après le premier swipe ou après 4 secondes
-        const origNext = nextSlide;
-        const origPrev = prevSlide;
-        // Wrap pour détecter la première navigation
         document.addEventListener('touchend', hideSwipeHint, { once: true });
         setTimeout(hideSwipeHint, 4000);
 
