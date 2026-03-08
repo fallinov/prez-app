@@ -375,6 +375,38 @@ function downloadHtml() {
   URL.revokeObjectURL(url)
 }
 
+// Supprimer une présentation
+const deletingFilename = ref<string | null>(null)
+
+async function deletePresentation(pres: PresentationFile) {
+  if (!confirm(`Supprimer « ${pres.title} » ?`)) return
+  deletingFilename.value = pres.filename
+  try {
+    await $fetch(`/api/presentations/${pres.filename}`, { method: 'DELETE' })
+    await loadPresentations()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors de la suppression'
+  } finally {
+    deletingFilename.value = null
+  }
+}
+
+// Télécharger une présentation existante
+async function downloadPresentation(pres: PresentationFile) {
+  try {
+    const response = await $fetch(`/api/presentations/${pres.filename}`)
+    const blob = new Blob([response.html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = pres.filename
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors du téléchargement'
+  }
+}
+
 // Formater la taille du fichier
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -559,28 +591,50 @@ function logout() {
               <div
                 v-for="pres in presentations"
                 :key="pres.filename"
-                class="p-3 hover:bg-muted-50 transition-colors group"
+                class="p-3 hover:bg-muted-50 transition-colors"
               >
-                <a
-                  :href="pres.url"
-                  target="_blank"
-                  class="block font-medium text-sm text-muted-900 hover:text-accent truncate"
-                >
+                <div class="font-medium text-sm text-muted-900 truncate">
                   {{ pres.title }}
-                </a>
-                <div class="text-xs text-muted-400 mt-1 flex justify-between items-center">
-                  <span>{{ pres.date }}</span>
-                  <div class="flex items-center gap-1">
-                    <span class="text-muted-300">{{ formatSize(pres.size) }}</span>
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      color="neutral"
-                      icon="i-lucide-pencil"
-                      :to="`/editor/${pres.filename}`"
-                      class="opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
+                </div>
+                <div class="text-xs text-muted-400 mt-1">
+                  {{ pres.date }} · {{ formatSize(pres.size) }}
+                </div>
+                <div class="flex items-center gap-1 mt-2">
+                  <UButton
+                    as="a"
+                    :href="pres.url"
+                    target="_blank"
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-maximize"
+                    title="Ouvrir en plein écran"
+                  />
+                  <UButton
+                    :to="`/editor/${pres.filename}`"
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-pencil"
+                    title="Modifier"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-download"
+                    title="Télécharger"
+                    @click="downloadPresentation(pres)"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                    title="Supprimer"
+                    :loading="deletingFilename === pres.filename"
+                    @click="deletePresentation(pres)"
+                  />
                 </div>
               </div>
             </div>
