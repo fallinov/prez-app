@@ -109,7 +109,7 @@ export default defineEventHandler(async (event) => {
 
         // Utiliser Haiku pour la revue (rapide et économique)
         const reviewResponse = await anthropic.messages.create({
-          model: 'claude-3-5-haiku-20241022',
+          model: 'claude-haiku-4-5-20251001',
           max_tokens: 8192,
           system: HTML_REVIEW_PROMPT,
           messages: [
@@ -145,7 +145,7 @@ export default defineEventHandler(async (event) => {
       markdown: markdown || '',
       baseColor: baseColor || '#0073aa',
       palette: palette || null,
-      model: model || 'claude-sonnet-4-20250514',
+      model: model || 'claude-sonnet-4-6',
       createdAt: new Date().toISOString()
     }
 

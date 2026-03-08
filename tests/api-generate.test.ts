@@ -201,7 +201,7 @@ describe('generate.post.ts - step-based API', () => {
     await handler(event)
 
     expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: 'claude-sonnet-4-20250514' })
+      expect.objectContaining({ model: 'claude-sonnet-4-6' })
     )
   })
 

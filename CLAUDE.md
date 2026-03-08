@@ -62,9 +62,9 @@ Générateur de présentations HTML pédagogiques avec IA (Claude).
 
 | Modèle | ID | Usage |
 |--------|-----|-------|
-| Sonnet 4 | `claude-sonnet-4-20250514` | Recommandé (équilibré) |
-| Opus 4 | `claude-opus-4-20250514` | Plus puissant (lent + cher) |
-| Haiku 3.5 | `claude-3-5-haiku-20241022` | Rapide (économique) |
+| Sonnet 4.6 | `claude-sonnet-4-6` | Recommandé (équilibré) |
+| Opus 4.6 | `claude-opus-4-6` | Plus puissant (lent + cher) |
+| Haiku 4.5 | `claude-haiku-4-5-20251001` | Rapide (économique) |
 
 ## Stack technique
 

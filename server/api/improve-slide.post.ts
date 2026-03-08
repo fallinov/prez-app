@@ -156,7 +156,7 @@ export default defineEventHandler(async (event) => {
     console.log(`Instructions: ${instructions}`)
 
     const anthropic = new Anthropic({ apiKey })
-    const selectedModel = model || metadata.model || 'claude-sonnet-4-20250514'
+    const selectedModel = model || metadata.model || 'claude-sonnet-4-6'
 
     // Demander à l'IA de modifier le slide
     const response = await anthropic.messages.create({

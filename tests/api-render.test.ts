@@ -97,7 +97,7 @@ describe('render.post.ts', () => {
       title: 'Test',
       markdown: '# Test\n\nContenu',
       palette,
-      model: 'claude-opus-4-20250514'
+      model: 'claude-opus-4-6'
     })
 
     await handler(event)
@@ -108,7 +108,7 @@ describe('render.post.ts', () => {
     expect(savedMetadata.markdown).toBe('# Test\n\nContenu')
     expect(savedMetadata.baseColor).toBe('#059669')
     expect(savedMetadata.palette).toEqual(palette)
-    expect(savedMetadata.model).toBe('claude-opus-4-20250514')
+    expect(savedMetadata.model).toBe('claude-opus-4-6')
     expect(savedMetadata.createdAt).toBeTruthy()
   })
 
@@ -129,7 +129,7 @@ describe('render.post.ts', () => {
     const result = await handler(event)
 
     expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: 'claude-3-5-haiku-20241022' })
+      expect.objectContaining({ model: 'claude-haiku-4-5-20251001' })
     )
     expect(result.html).toBe(reviewedHtml)
   })

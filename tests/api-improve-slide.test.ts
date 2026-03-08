@@ -72,7 +72,7 @@ Sous-titre accrocheur
     accentDark: '#2563eb',
     textHighlight: '#fbbf24'
   },
-  model: 'claude-sonnet-4-20250514',
+  model: 'claude-sonnet-4-6',
   createdAt: '2026-03-08T10:00:00.000Z'
 }
 
@@ -175,7 +175,7 @@ describe('improve-slide.post.ts', () => {
       slideIndex: 1,
       instructions: 'Test',
       apiKey: 'sk-test',
-      model: 'claude-opus-4-20250514'
+      model: 'claude-opus-4-6'
     })
 
     mockCreate.mockResolvedValueOnce({
@@ -185,7 +185,7 @@ describe('improve-slide.post.ts', () => {
     await handler(event)
 
     expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: 'claude-opus-4-20250514' })
+      expect.objectContaining({ model: 'claude-opus-4-6' })
     )
   })
 

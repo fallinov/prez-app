@@ -4,9 +4,9 @@ import { PALETTE_PROMPT, RESEARCH_PROMPT, SYSTEM_PROMPT, REVIEW_PROMPT } from '.
 
 // Modèles valides
 const VALID_MODELS = [
-  'claude-sonnet-4-20250514',
-  'claude-opus-4-20250514',
-  'claude-3-5-haiku-20241022'
+  'claude-sonnet-4-6',
+  'claude-opus-4-6',
+  'claude-haiku-4-5-20251001'
 ]
 
 // Interface pour la palette générée
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const selectedModel = VALID_MODELS.includes(model) ? model : 'claude-sonnet-4-20250514'
+  const selectedModel = VALID_MODELS.includes(model) ? model : 'claude-sonnet-4-6'
 
   try {
     const anthropic = new Anthropic({ apiKey })
