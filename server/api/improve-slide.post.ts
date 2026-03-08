@@ -9,6 +9,10 @@ const SLIDE_IMPROVE_PROMPT = `Tu modifies UN SEUL slide d'une présentation péd
 # TA MISSION
 Modifier le contenu du slide selon les instructions de l'utilisateur.
 
+# FILTRE QUALITÉ
+1. **"Est-ce que je dirais ça à voix haute ?"** — Le texte doit sonner naturel et oral
+2. **"Est-ce que cette slide mérite sa place ?"** — Le contenu doit apporter une valeur concrète avec des données réelles
+
 # FORMAT MARKDOWN PREZ (OBLIGATOIRE)
 
 ## Titre
@@ -77,6 +81,8 @@ NE PAS utiliser de balises HTML ou d'URLs d'images.
 2. **Mise en valeur** : Utiliser **gras** (pas de style inline)
 3. **Conserve la structure** : Garder les blocs ::: existants si pertinents
 4. **Densité** : Max 4 cartes, 3 compare, 5 steps, 4 points
+5. **Langage naturel** : Reformuler ce qui sonne artificiel ou trop écrit
+6. **Données concrètes** : Inclure des chiffres et exemples réels
 
 # FORMAT DE SORTIE
 

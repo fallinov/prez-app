@@ -96,8 +96,9 @@ interface ProgressStep {
 const showProgressModal = ref(false)
 const progressSteps = ref<ProgressStep[]>([
   { id: 'palette', label: 'Génération de la palette WCAG', status: 'pending' },
+  { id: 'research', label: 'Analyse et brief structuré', status: 'pending' },
   { id: 'generate', label: 'Génération du contenu', status: 'pending' },
-  { id: 'review', label: 'Relecture et amélioration', status: 'pending' },
+  { id: 'review', label: 'Relecture et filtres qualité', status: 'pending' },
   { id: 'render', label: 'Création du HTML', status: 'pending' },
   { id: 'ux-review', label: 'Revue UX et accessibilité', status: 'pending' },
   { id: 'save', label: 'Sauvegarde', status: 'pending' }
@@ -269,24 +270,32 @@ async function generatePresentation() {
       signal: abortController.value.signal
     })
 
-    // Progression simulée : palette (1s) → génération (2s) → relecture
+    // Progression simulée : palette (1s) → recherche (3s) → génération (6s) → relecture
     setTimeout(() => {
       if (loading.value) {
         setStepStatus('palette', 'done')
-        setStepStatus('generate', 'active')
+        setStepStatus('research', 'active')
       }
     }, 1000)
+
+    setTimeout(() => {
+      if (loading.value) {
+        setStepStatus('research', 'done')
+        setStepStatus('generate', 'active')
+      }
+    }, 3000)
 
     setTimeout(() => {
       if (loading.value) {
         setStepStatus('generate', 'done')
         setStepStatus('review', 'active')
       }
-    }, 4000)
+    }, 6000)
 
     const mdResponse = await generatePromise
 
     setStepStatus('palette', 'done')
+    setStepStatus('research', 'done')
     setStepStatus('generate', 'done')
     setStepStatus('review', 'done')
 

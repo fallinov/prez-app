@@ -1,6 +1,45 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { Slide } from '~/types'
 
+const RESEARCH_PROMPT = `Tu es un expert en préparation de présentations pédagogiques.
+
+# TA MISSION
+Analyser le contenu source fourni et produire un BRIEF STRUCTURÉ qui servira de base à la génération des slides.
+
+# ÉTAPES D'ANALYSE
+
+1. **Identifier les thèmes clés** : Quels sont les 6-8 concepts essentiels ?
+2. **Extraire les données concrètes** : Chiffres, statistiques, pourcentages, comparaisons
+3. **Repérer les lacunes** : Quelles informations manquent pour une présentation complète ?
+4. **Structurer la progression** : Quel ordre logique pour l'apprentissage ?
+5. **Identifier les exemples concrets** : Cas pratiques, démonstrations, avant/après
+
+# FILTRE QUALITÉ (CRITIQUE)
+Pour chaque slide envisagée, se demander :
+- **"Est-ce que je dirais ça à voix haute ?"** → Si non, reformuler pour que ce soit naturel
+- **"Est-ce que cette slide mérite sa place ?"** → Si non, la fusionner ou la supprimer
+
+# FORMAT DE SORTIE
+
+Retourne UNIQUEMENT un brief structuré au format suivant :
+
+BRIEF:
+- Sujet : [titre du sujet]
+- Public cible : [déduire du contenu]
+- Objectif pédagogique : [ce que l'apprenant doit retenir]
+- Données clés : [liste des chiffres/stats importants]
+
+PLAN:
+1. [Titre slide 1 - Hero] — [accroche]
+2. [Titre slide 2] — [2-3 points clés] — [layout suggéré : cards/compare/steps/etc.]
+3. [Titre slide 3] — [2-3 points clés] — [layout suggéré]
+...
+N. [Titre slide finale - Récapitulatif] — [points à retenir]
+
+ENRICHISSEMENTS:
+- [suggestions de données/exemples concrets à ajouter]
+- [liens utiles pertinents]`
+
 const SYSTEM_PROMPT = `Tu es un expert en création de présentations pédagogiques VISUELLEMENT RICHES et PROFESSIONNELLES.
 
 # FORMAT DE SORTIE
@@ -154,6 +193,19 @@ TOUJOURS ajouter des liens vers les outils, sites et applications mentionnés :
 - \`→\` = action/étape
 - \`💡\` = astuce
 - \`⚠\` = attention
+
+# FILTRE QUALITÉ (CRITIQUE)
+
+Pour CHAQUE slide, applique ces 2 filtres :
+1. **"Est-ce que je dirais ça à voix haute ?"** — Le contenu doit sonner naturel, comme un enseignant qui parle à sa classe. Pas de jargon inutile, pas de phrases artificielles.
+2. **"Est-ce que cette slide mérite sa place ?"** — Chaque slide doit apporter une valeur unique. Si tu hésites, fusionne-la avec une autre ou supprime-la.
+
+# CONTENU DE QUALITÉ
+
+- **Données concrètes** : Toujours inclure des chiffres, statistiques, pourcentages réels
+- **Exemples pratiques** : Noms de fichiers réels, cas d'usage concrets, avant/après
+- **Langage naturel** : Écris comme si tu expliquais à quelqu'un en face de toi
+- **Pas de remplissage** : Chaque mot doit servir. Supprimer le superflu
 
 # RÈGLES STRICTES
 
@@ -309,17 +361,27 @@ const REVIEW_PROMPT = `Tu es un relecteur expert de présentations pédagogiques
 # TA MISSION
 Relire la présentation fournie et la retourner CORRIGÉE et AMÉLIORÉE.
 
+# FILTRE QUALITÉ (APPLIQUER SLIDE PAR SLIDE)
+
+Pour CHAQUE slide, applique ces 2 questions :
+1. **"Est-ce que je dirais ça à voix haute ?"** — Si une phrase sonne artificielle ou trop écrite, reformule-la naturellement. Un enseignant parle simplement à ses élèves.
+2. **"Est-ce que cette slide mérite sa place ?"** — Si une slide n'apporte pas de valeur unique, fusionne-la avec une autre ou enrichis-la avec des données concrètes.
+
 # CORRECTIONS À EFFECTUER
 1. **Orthographe et grammaire** : Corriger toutes les fautes
 2. **Clarté** : Reformuler les phrases confuses ou trop longues
-3. **Cohérence** : Vérifier que le fil conducteur est logique
-4. **Équilibre** : S'assurer que chaque slide a assez de contenu sans être surchargée
-5. **Titres** : Vérifier qu'ils sont courts (max 5 mots) avec 1 mot en **gras**
+3. **Ton naturel** : Le texte doit sonner comme un enseignant qui parle, pas comme un document écrit
+4. **Cohérence** : Vérifier que le fil conducteur est logique
+5. **Équilibre** : S'assurer que chaque slide a assez de contenu sans être surchargée
+6. **Titres** : Vérifier qu'ils sont courts (max 5 mots) avec 1 mot en **gras**
+7. **Données concrètes** : Vérifier la présence de chiffres, statistiques, exemples réels
 
 # AMÉLIORATIONS POSSIBLES
 - Ajouter des exemples concrets si manquants
+- Remplacer le jargon par un langage accessible
 - Renforcer les transitions entre slides
 - Améliorer la variété des layouts utilisés
+- Ajouter des données chiffrées là où c'est pertinent
 
 # FORMAT DE SORTIE
 Retourne UNIQUEMENT le Markdown corrigé et amélioré, sans commentaires ni explications.
@@ -411,7 +473,28 @@ export default defineEventHandler(async (event) => {
       ? `Titre de la présentation : "${title}"\n\nContenu source :\n${prompt}`
       : prompt
 
-    // Étape 1 : Génération initiale
+    // Étape 1 : Recherche et brief structuré
+    console.log('🔍 Analyse et brief structuré...')
+    const researchResponse = await anthropic.messages.create({
+      model: selectedModel,
+      max_tokens: 2048,
+      system: RESEARCH_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    })
+
+    const researchBrief = researchResponse.content
+      .filter(block => block.type === 'text')
+      .map(block => (block as { type: 'text'; text: string }).text)
+      .join('\n')
+
+    console.log('✅ Brief structuré créé')
+
+    // Étape 2 : Génération initiale (enrichie par le brief)
     console.log('📝 Génération du markdown...')
     const response = await anthropic.messages.create({
       model: selectedModel,
@@ -420,7 +503,7 @@ export default defineEventHandler(async (event) => {
       messages: [
         {
           role: 'user',
-          content: userPrompt
+          content: `# BRIEF DE RECHERCHE (contexte pour la génération)\n\n${researchBrief}\n\n# CONTENU SOURCE\n\n${userPrompt}`
         }
       ]
     })
@@ -431,7 +514,7 @@ export default defineEventHandler(async (event) => {
       .map(block => (block as { type: 'text'; text: string }).text)
       .join('\n')
 
-    // Étape 2 : Relecture et amélioration
+    // Étape 3 : Relecture et amélioration
     console.log('🔍 Relecture du markdown...')
     const reviewResponse = await anthropic.messages.create({
       model: selectedModel,
