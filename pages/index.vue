@@ -602,7 +602,7 @@ function logout() {
                 <div class="flex items-center gap-1 mt-2">
                   <UButton
                     as="a"
-                    :href="pres.url"
+                    :href="`/api/presentations/view/${pres.filename}`"
                     target="_blank"
                     size="xs"
                     variant="soft"
