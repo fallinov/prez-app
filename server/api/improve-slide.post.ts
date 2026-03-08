@@ -202,15 +202,18 @@ export default defineEventHandler(async (event) => {
       palette: metadata.palette || undefined
     })
 
-    // Sauvegarder le HTML
-    const htmlPath = join(publicDir, filename)
-    await writeFile(htmlPath, html, 'utf-8')
+    // Sauvegarder le HTML et les metadata
+    try {
+      const htmlPath = join(publicDir, filename)
+      await writeFile(htmlPath, html, 'utf-8')
 
-    // Mettre à jour les metadata
-    metadata.markdown = newMarkdown
-    await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
+      metadata.markdown = newMarkdown
+      await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
 
-    console.log(`✅ Slide ${slideIndex + 1} modifié et sauvegardé`)
+      console.log(`✅ Slide ${slideIndex + 1} modifié et sauvegardé`)
+    } catch (fsError: any) {
+      console.log('⚠️ Sauvegarde fichier impossible (read-only FS):', fsError.message)
+    }
 
     return {
       markdown: newMarkdown,

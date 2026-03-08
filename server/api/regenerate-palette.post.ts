@@ -119,16 +119,19 @@ export default defineEventHandler(async (event) => {
       palette
     })
 
-    // Sauvegarder le nouveau HTML
-    const htmlPath = join(publicDir, filename)
-    await writeFile(htmlPath, html, 'utf-8')
+    // Sauvegarder le nouveau HTML et les metadata
+    try {
+      const htmlPath = join(publicDir, filename)
+      await writeFile(htmlPath, html, 'utf-8')
 
-    // Mettre à jour les metadata (palette + nouvelle couleur de base)
-    metadata.palette = palette
-    metadata.baseColor = baseColor
-    await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
+      metadata.palette = palette
+      metadata.baseColor = baseColor
+      await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
 
-    console.log('✅ Palette régénérée et sauvegardée')
+      console.log('✅ Palette régénérée et sauvegardée')
+    } catch (fsError: any) {
+      console.log('⚠️ Sauvegarde fichier impossible (read-only FS):', fsError.message)
+    }
 
     return {
       palette,
