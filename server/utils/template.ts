@@ -503,7 +503,16 @@ function parseContent(content: string): string {
   })
 
   // Parser les blocs spéciaux :::type ... :::
+  // Protéger le HTML rendu des blocs spéciaux avec des placeholders
+  // pour éviter que le wrapping paragraphes ne casse le HTML
+  const renderedBlocks: string[] = []
   html = parseSpecialBlocks(html)
+
+  // Protéger les blocs HTML multi-lignes (div, section, ol, etc.) avant le wrapping paragraphes
+  html = html.replace(/<(div|section|ol|ul|figure|blockquote|nav)\b[\s\S]*?<\/\1>/g, (match) => {
+    renderedBlocks.push(match)
+    return `{{BLOCK_${renderedBlocks.length - 1}}}`
+  })
 
   // Paragraphes simples (lignes non traitées)
   html = html.split('\n').map(line => {
@@ -511,6 +520,11 @@ function parseContent(content: string): string {
     if (!trimmed || trimmed.startsWith('<') || trimmed.startsWith('{{')) return line
     return `<p class="text-lg text-slate-300 mb-4">${formatInlineMarkdown(trimmed)}</p>`
   }).join('\n')
+
+  // Restaurer les blocs HTML rendus
+  renderedBlocks.forEach((block, i) => {
+    html = html.replace(`{{BLOCK_${i}}}`, block)
+  })
 
   // Restaurer les blocs de code
   codeBlocks.forEach((code, i) => {
@@ -664,10 +678,7 @@ function renderSidebarBlockInner(title: string, content: string): string {
 
   return `
     <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
-        <h3 class="text-lg font-semibold mb-4 text-red-400 flex items-center gap-2">
-            ${lucideIcon('alert-triangle', 'w-5 h-5')}
-            ${escapeHtml(cleanTitle)}
-        </h3>
+        <h3 class="text-lg font-semibold mb-4 text-red-400 flex items-center gap-2">${lucideIcon('alert-triangle', 'w-5 h-5')} ${escapeHtml(cleanTitle)}</h3>
         <div class="space-y-3">${itemsHtml}</div>
     </div>`
 }
