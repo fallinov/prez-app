@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { readFile, writeFile } from 'fs/promises'
-import { join } from 'path'
 import { renderPresentation } from '../utils/template'
+import { storageReadMetadata, storageWritePresentation } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const SLIDE_IMPROVE_PROMPT = `Tu modifies UN SEUL slide d'une présentation pédagogique au format Markdown PREZ.
@@ -126,17 +125,9 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
     // Lire les metadata
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
+    const metadata = await storageReadMetadata(filename) as PresentationMetadata | null
+    if (!metadata) {
       throw createError({
         statusCode: 404,
         message: 'Metadata non trouvée pour cette présentation.'
@@ -203,17 +194,9 @@ export default defineEventHandler(async (event) => {
     })
 
     // Sauvegarder le HTML et les metadata
-    try {
-      const htmlPath = join(publicDir, filename)
-      await writeFile(htmlPath, html, 'utf-8')
-
-      metadata.markdown = newMarkdown
-      await writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
-
-      console.log(`✅ Slide ${slideIndex + 1} modifié et sauvegardé`)
-    } catch (fsError: any) {
-      console.log('⚠️ Sauvegarde fichier impossible (read-only FS):', fsError.message)
-    }
+    metadata.markdown = newMarkdown
+    await storageWritePresentation(filename, html, metadata)
+    console.log(`✅ Slide ${slideIndex + 1} modifié et sauvegardé`)
 
     return {
       markdown: newMarkdown,

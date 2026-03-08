@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { writeFile, mkdir } from 'fs/promises'
 
-// Mock fs/promises
-vi.mock('fs/promises', () => ({
-  writeFile: vi.fn().mockResolvedValue(undefined),
-  mkdir: vi.fn().mockResolvedValue(undefined)
+// Mock storage utility
+const mockStorageWritePresentation = vi.fn().mockResolvedValue({
+  htmlUrl: '/generated/test.html',
+  metadataUrl: '/generated/test.json'
+})
+vi.mock('../server/utils/storage', () => ({
+  storageWritePresentation: (...args: any[]) => mockStorageWritePresentation(...args)
 }))
 
 // Mock Anthropic SDK
@@ -32,6 +34,10 @@ vi.stubGlobal('readBody', readBody)
 let handler: any
 beforeEach(async () => {
   vi.clearAllMocks()
+  mockStorageWritePresentation.mockResolvedValue({
+    htmlUrl: '/generated/test.html',
+    metadataUrl: '/generated/test.json'
+  })
   const mod = await import('../server/api/render.post')
   handler = mod.default
 })
@@ -49,7 +55,7 @@ describe('render.post.ts', () => {
     await expect(handler(event)).rejects.toThrow('Slides requises')
   })
 
-  it('rend le HTML et sauvegarde les fichiers', async () => {
+  it('rend le HTML et sauvegarde via storage', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
       slides: validSlides,
@@ -62,18 +68,21 @@ describe('render.post.ts', () => {
     // Vérifie que le HTML est généré
     expect(result.html).toContain('<!DOCTYPE html>')
     expect(result.html).toContain('Ma Présentation')
-    expect(result.html).toContain('Les')
 
-    // Vérifie que les fichiers sont sauvegardés
-    expect(mkdir).toHaveBeenCalledWith(expect.stringContaining('public/generated'), { recursive: true })
-    expect(writeFile).toHaveBeenCalledTimes(2) // HTML + JSON metadata
+    // Vérifie que storageWritePresentation est appelé
+    expect(mockStorageWritePresentation).toHaveBeenCalledTimes(1)
+    expect(mockStorageWritePresentation).toHaveBeenCalledWith(
+      expect.stringMatching(/\.html$/),
+      expect.stringContaining('<!DOCTYPE html>'),
+      expect.objectContaining({ title: 'Ma Présentation' })
+    )
 
-    // Vérifie le filename
+    // Vérifie le filename et url
     expect(result.filename).toMatch(/\.html$/)
-    expect(result.url).toMatch(/^\/generated\//)
+    expect(result.url).toBe('/generated/test.html')
   })
 
-  it('sauvegarde les metadata JSON correctes', async () => {
+  it('sauvegarde les metadata correctes', async () => {
     const event = {} as any
     const palette = {
       accent: '#059669',
@@ -93,9 +102,7 @@ describe('render.post.ts', () => {
 
     await handler(event)
 
-    // Le 2ème writeFile est le JSON metadata
-    const metadataCall = vi.mocked(writeFile).mock.calls[1]
-    const savedMetadata = JSON.parse(metadataCall[1] as string)
+    const savedMetadata = mockStorageWritePresentation.mock.calls[0][2]
 
     expect(savedMetadata.title).toBe('Test')
     expect(savedMetadata.markdown).toBe('# Test\n\nContenu')
@@ -114,7 +121,6 @@ describe('render.post.ts', () => {
       apiKey: 'sk-test-123'
     })
 
-    // La revue retourne un HTML modifié
     const reviewedHtml = '<!DOCTYPE html><html><body>Reviewed</body></html>'
     mockCreate.mockResolvedValueOnce({
       content: [{ type: 'text', text: reviewedHtml }]
@@ -122,12 +128,9 @@ describe('render.post.ts', () => {
 
     const result = await handler(event)
 
-    // L'appel utilise Haiku
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'claude-3-5-haiku-20241022' })
     )
-
-    // Le HTML retourné est celui de la revue
     expect(result.html).toBe(reviewedHtml)
   })
 
@@ -140,14 +143,12 @@ describe('render.post.ts', () => {
       apiKey: 'sk-test-123'
     })
 
-    // La revue retourne du texte invalide (pas de <!DOCTYPE)
     mockCreate.mockResolvedValueOnce({
       content: [{ type: 'text', text: 'Le HTML semble correct, aucune modification nécessaire.' }]
     })
 
     const result = await handler(event)
 
-    // Le HTML original est conservé
     expect(result.html).toContain('<!DOCTYPE html>')
     expect(result.html).not.toContain('aucune modification')
   })
@@ -165,7 +166,6 @@ describe('render.post.ts', () => {
 
     const result = await handler(event)
 
-    // Le HTML original est quand même retourné
     expect(result.html).toContain('<!DOCTYPE html>')
     expect(result.filename).toMatch(/\.html$/)
   })
@@ -180,7 +180,6 @@ describe('render.post.ts', () => {
 
     const result = await handler(event)
 
-    // Le slug doit être normalisé
     expect(result.filename).toMatch(/les-medias/)
     expect(result.filename).not.toMatch(/[&'()]/)
     expect(result.filename).toMatch(/\.html$/)

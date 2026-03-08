@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { readFile, writeFile } from 'fs/promises'
 
-// Mock fs/promises
-vi.mock('fs/promises', () => ({
-  readFile: vi.fn(),
-  writeFile: vi.fn().mockResolvedValue(undefined)
+// Mock storage utility
+const mockStorageReadMetadata = vi.fn()
+const mockStorageWritePresentation = vi.fn().mockResolvedValue({
+  htmlUrl: '/generated/test.html',
+  metadataUrl: '/generated/test.json'
+})
+vi.mock('../server/utils/storage', () => ({
+  storageReadMetadata: (...args: any[]) => mockStorageReadMetadata(...args),
+  storageWritePresentation: (...args: any[]) => mockStorageWritePresentation(...args)
 }))
 
 // Mock Anthropic SDK
@@ -75,7 +79,11 @@ Sous-titre accrocheur
 let handler: any
 beforeEach(async () => {
   vi.clearAllMocks()
-  vi.mocked(readFile).mockResolvedValue(JSON.stringify(sampleMetadata))
+  mockStorageReadMetadata.mockResolvedValue({ ...sampleMetadata })
+  mockStorageWritePresentation.mockResolvedValue({
+    htmlUrl: '/generated/test.html',
+    metadataUrl: '/generated/test.json'
+  })
   const mod = await import('../server/api/improve-slide.post')
   handler = mod.default
 })
@@ -99,7 +107,7 @@ describe('improve-slide.post.ts', () => {
       instructions: 'Changer le titre',
       apiKey: 'sk-test'
     })
-    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'))
+    mockStorageReadMetadata.mockResolvedValue(null)
 
     await expect(handler(event)).rejects.toThrow('Metadata non trouvée')
   })
@@ -147,27 +155,21 @@ describe('improve-slide.post.ts', () => {
 
     const result = await handler(event)
 
-    // Vérifie la structure du résultat
     expect(result).toHaveProperty('markdown')
     expect(result).toHaveProperty('slides')
     expect(result).toHaveProperty('html')
     expect(result.modifiedSlideIndex).toBe(1)
-
-    // Le slide modifié doit contenir JavaScript
     expect(result.markdown).toContain('JS')
     expect(result.slides).toHaveLength(3)
-
-    // Le HTML est re-rendu
     expect(result.html).toContain('<!DOCTYPE html>')
 
-    // Les fichiers sont sauvegardés (HTML + metadata)
-    expect(writeFile).toHaveBeenCalledTimes(2)
+    // Storage est appelé
+    expect(mockStorageWritePresentation).toHaveBeenCalledTimes(1)
   })
 
   it('utilise le modèle spécifié ou celui des metadata', async () => {
     const event = {} as any
 
-    // Avec modèle explicite
     readBody.mockResolvedValue({
       filename: 'test.html',
       slideIndex: 1,
@@ -202,11 +204,8 @@ describe('improve-slide.post.ts', () => {
 
     const result = await handler(event)
 
-    // Le slide 0 (hero) n'est pas modifié
     expect(result.slides[0].title).toContain('principal')
-    // Le slide 2 (récap) n'est pas modifié
     expect(result.slides[2].title).toContain('Récapitulatif')
-    // Le slide 1 est modifié
     expect(result.slides[1].title).toContain('Nouveau')
   })
 
@@ -225,12 +224,9 @@ describe('improve-slide.post.ts', () => {
 
     await handler(event)
 
-    // Le 2ème writeFile est le JSON metadata
-    const metadataCall = vi.mocked(writeFile).mock.calls[1]
-    const savedMetadata = JSON.parse(metadataCall[1] as string)
-
+    const savedMetadata = mockStorageWritePresentation.mock.calls[0][2]
     expect(savedMetadata.markdown).toContain('Nouveau **titre**')
-    expect(savedMetadata.title).toBe('Ma Présentation') // Le titre metadata ne change pas
+    expect(savedMetadata.title).toBe('Ma Présentation')
     expect(savedMetadata.palette).toEqual(sampleMetadata.palette)
   })
 })

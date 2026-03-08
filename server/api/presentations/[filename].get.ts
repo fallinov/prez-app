@@ -1,25 +1,5 @@
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { storageRead, storageReadMetadata } from '../../utils/storage'
 import type { Slide } from '~/types'
-
-// Interface pour la palette
-interface GeneratedPalette {
-  accent: string
-  accentContrast: string
-  accentLight: string
-  accentDark: string
-  textHighlight: string
-}
-
-// Interface metadata
-interface PresentationMetadata {
-  title: string
-  markdown: string
-  baseColor: string
-  palette: GeneratedPalette | null
-  model: string
-  createdAt: string
-}
 
 export default defineEventHandler(async (event) => {
   const filename = getRouterParam(event, 'filename')
@@ -31,44 +11,31 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  try {
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
-    // Lire le HTML
-    const htmlPath = join(publicDir, filename)
-    const html = await readFile(htmlPath, 'utf-8')
-
-    // Lire les metadata
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
-      throw createError({
-        statusCode: 404,
-        message: 'Metadata non trouvée. Régénérez la présentation.'
-      })
-    }
-
-    // Parser les slides depuis le markdown
-    const slides = parseSlides(metadata.markdown)
-
-    return {
-      metadata,
-      html,
-      slides
-    }
-  } catch (error: any) {
-    if (error.statusCode) throw error
-
-    console.error('Erreur chargement présentation:', error)
+  // Lire le HTML
+  const html = await storageRead(filename)
+  if (!html) {
     throw createError({
       statusCode: 404,
       message: 'Présentation non trouvée'
     })
+  }
+
+  // Lire les metadata
+  const metadata = await storageReadMetadata(filename)
+  if (!metadata) {
+    throw createError({
+      statusCode: 404,
+      message: 'Metadata non trouvée. Régénérez la présentation.'
+    })
+  }
+
+  // Parser les slides depuis le markdown
+  const slides = parseSlides(metadata.markdown)
+
+  return {
+    metadata,
+    html,
+    slides
   }
 })
 

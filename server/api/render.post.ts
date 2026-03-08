@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { renderPresentation } from '../utils/template'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { storageWritePresentation } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const HTML_REVIEW_PROMPT = `Tu es un expert en HTML/CSS, UX et accessibilité pour présentations pédagogiques projetées en salle de classe.
@@ -139,38 +138,21 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Sauvegarder dans public/generated/
+    // Sauvegarder (Vercel Blob ou filesystem local)
     const filename = generateFilename(title)
-    const publicDir = join(process.cwd(), 'public', 'generated')
-
-    let url = ''
-    try {
-      // Créer le dossier si nécessaire
-      await mkdir(publicDir, { recursive: true })
-
-      const filepath = join(publicDir, filename)
-      await writeFile(filepath, html, 'utf-8')
-
-      // Sauvegarder les metadata JSON (pour modifications futures)
-      const metadataFilename = filename.replace('.html', '.json')
-      const metadata: PresentationMetadata = {
-        title: title || 'Présentation',
-        markdown: markdown || '',
-        baseColor: baseColor || '#0073aa',
-        palette: palette || null,
-        model: model || 'claude-sonnet-4-20250514',
-        createdAt: new Date().toISOString()
-      }
-      await writeFile(join(publicDir, metadataFilename), JSON.stringify(metadata, null, 2), 'utf-8')
-
-      url = `/generated/${filename}`
-      console.log(`✅ Présentation sauvegardée: ${url}`)
-    } catch (fsError: any) {
-      // Filesystem read-only (Vercel, etc.) — on retourne le HTML sans sauvegarder
-      console.log('⚠️ Sauvegarde fichier impossible (read-only FS):', fsError.message)
+    const metadata: PresentationMetadata = {
+      title: title || 'Présentation',
+      markdown: markdown || '',
+      baseColor: baseColor || '#0073aa',
+      palette: palette || null,
+      model: model || 'claude-sonnet-4-20250514',
+      createdAt: new Date().toISOString()
     }
 
-    return { html, url, filename }
+    const { htmlUrl } = await storageWritePresentation(filename, html, metadata)
+    console.log(`✅ Présentation sauvegardée: ${htmlUrl}`)
+
+    return { html, url: htmlUrl, filename }
   } catch (error: any) {
     console.error('Erreur rendu:', error)
     throw createError({

@@ -1,6 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { storageReadMetadata } from '../utils/storage'
 import type { Slide } from '~/types'
 
 const IMPROVE_PROMPT = `Tu es un expert en amélioration de présentations pédagogiques au format Markdown PREZ.
@@ -87,15 +86,8 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Lire les metadata de la présentation
-    const publicDir = join(process.cwd(), 'public', 'generated')
-    const metadataFilename = filename.replace('.html', '.json')
-    const metadataPath = join(publicDir, metadataFilename)
-
-    let metadata: PresentationMetadata
-    try {
-      const metadataContent = await readFile(metadataPath, 'utf-8')
-      metadata = JSON.parse(metadataContent)
-    } catch {
+    const metadata = await storageReadMetadata(filename) as PresentationMetadata | null
+    if (!metadata) {
       throw createError({
         statusCode: 404,
         message: 'Metadata non trouvée pour cette présentation. Régénérez-la d\'abord.'
