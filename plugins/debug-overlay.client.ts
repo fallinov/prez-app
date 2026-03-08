@@ -160,23 +160,54 @@ export default defineNuxtPlugin(() => {
 
   // Capture: unhandled promise rejections
   window.addEventListener('unhandledrejection', (e) => {
-    const reason = e.reason instanceof Error
-      ? `${e.reason.message}\n  ${e.reason.stack?.split('\n')[1]?.trim() || ''}`
-      : String(e.reason)
-    addError(`PROMISE: ${reason}`)
+    addError(`PROMISE: ${serialize(e.reason)}`)
   })
+
+  // Sérialise un objet en extrayant les propriétés non-énumérables (FetchError, Error, etc.)
+  function serialize(val: any): string {
+    if (val == null) return String(val)
+    if (typeof val !== 'object') return String(val)
+
+    // FetchError / Error : extraire les champs utiles
+    if (val instanceof Error || val.name === 'FetchError') {
+      const parts: string[] = []
+      if (val.name) parts.push(`name: ${val.name}`)
+      if (val.message) parts.push(`message: ${val.message}`)
+      if (val.statusCode) parts.push(`status: ${val.statusCode}`)
+      if (val.statusMessage) parts.push(`statusMessage: ${val.statusMessage}`)
+      // $fetch met la réponse serveur dans .data
+      if (val.data) {
+        try { parts.push(`data: ${JSON.stringify(val.data, null, 2)}`) }
+        catch { parts.push(`data: [non-serializable]`) }
+      }
+      // URL de la requête (Nuxt FetchError)
+      if (val.request) parts.push(`url: ${val.request}`)
+      if (val.response?._data) {
+        try { parts.push(`response: ${JSON.stringify(val.response._data, null, 2)}`) }
+        catch { parts.push(`response: [non-serializable]`) }
+      }
+      if (val.stack) {
+        const stackLines = val.stack.split('\n').slice(0, 4).join('\n')
+        parts.push(`stack:\n${stackLines}`)
+      }
+      return parts.join('\n')
+    }
+
+    try { return JSON.stringify(val, null, 2) }
+    catch { return String(val) }
+  }
 
   // Capture: console.error
   const originalError = console.error
   console.error = (...args: any[]) => {
-    addError(`console.error: ${args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')}`)
+    addError(`console.error: ${args.map(serialize).join(' ')}`)
     originalError.apply(console, args)
   }
 
   // Capture: console.warn
   const originalWarn = console.warn
   console.warn = (...args: any[]) => {
-    addError(`console.warn: ${args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')}`)
+    addError(`console.warn: ${args.map(serialize).join(' ')}`)
     originalWarn.apply(console, args)
   }
 })
