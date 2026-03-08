@@ -37,59 +37,51 @@ beforeEach(async () => {
   handler = mod.default
 })
 
-describe('generate.post.ts', () => {
-  it('rejette si prompt ou apiKey manquant', async () => {
+describe('generate.post.ts - step-based API', () => {
+  it('rejette si step ou apiKey manquant', async () => {
     const event = {} as any
-    readBody.mockResolvedValue({ prompt: '', apiKey: '' })
+    readBody.mockResolvedValue({ step: '', apiKey: '' })
 
-    await expect(handler(event)).rejects.toThrow('Prompt et clé API requis')
+    await expect(handler(event)).rejects.toThrow('Step et clé API requis')
   })
 
-  it('exécute le pipeline complet (palette → research → generate → review)', async () => {
+  it('rejette un step invalide', async () => {
+    const event = {} as any
+    readBody.mockResolvedValue({ step: 'invalid', apiKey: 'sk-test' })
+
+    await expect(handler(event)).rejects.toThrow('Step invalide')
+  })
+
+  // ─── STEP: PALETTE ──────────────────────────────────
+
+  it('génère une palette depuis une couleur de base', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
-      prompt: 'Les bases du HTML',
-      apiKey: 'sk-test-123',
-      title: 'HTML pour débutants',
-      model: 'claude-sonnet-4-20250514',
+      step: 'palette',
+      apiKey: 'sk-test',
       baseColor: '#3b82f6'
     })
 
-    // 4 appels Claude : palette, research, generation, review
-    mockCreate
-      .mockResolvedValueOnce(claudeResponse('{"accent":"#3b82f6","accentContrast":"#ffffff","accentLight":"#60a5fa","accentDark":"#2563eb","textHighlight":"#fbbf24"}'))
-      .mockResolvedValueOnce(claudeResponse('BRIEF:\n- Sujet: HTML\nPLAN:\n1. Titre\n2. Balises'))
-      .mockResolvedValueOnce(claudeResponse('# HTML pour **débutants**\n\nLes bases du web\n\n[HTML] [Web]\n\n---\n\n# Les **balises** essentielles\n\n:::cards\n[<h1>|blue] Titres\n✓ Structure le contenu\n\n[<p>|green] Paragraphes\n✓ Texte courant\n:::'))
-      .mockResolvedValueOnce(claudeResponse('# HTML pour **débutants**\n\nLes bases du web\n\n[HTML] [Web]\n\n---\n\n# Les **balises** essentielles\n\n:::cards\n[<h1>|blue] Titres\n✓ Structure le contenu\n\n[<p>|green] Paragraphes\n✓ Texte courant\n:::'))
+    mockCreate.mockResolvedValueOnce(claudeResponse(
+      '{"accent":"#3b82f6","accentContrast":"#ffffff","accentLight":"#60a5fa","accentDark":"#2563eb","textHighlight":"#fbbf24"}'
+    ))
 
     const result = await handler(event)
 
-    // Vérifie que 4 appels Claude ont été faits
-    expect(mockCreate).toHaveBeenCalledTimes(4)
-
-    // Vérifie la structure du résultat
-    expect(result).toHaveProperty('markdown')
-    expect(result).toHaveProperty('slides')
-    expect(result).toHaveProperty('palette')
-    expect(result.slides).toHaveLength(2)
-    expect(result.slides[0].title).toContain('HTML')
     expect(result.palette.accent).toBe('#3b82f6')
+    expect(result.palette.accentContrast).toBe('#ffffff')
+    expect(mockCreate).toHaveBeenCalledTimes(1)
   })
 
-  it('utilise la palette fallback si la génération échoue', async () => {
+  it('retourne une palette fallback si la génération échoue', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
-      prompt: 'Test',
-      apiKey: 'sk-test-123',
+      step: 'palette',
+      apiKey: 'sk-test',
       baseColor: '#ff0000'
     })
 
-    // Palette échoue, puis research, generate, review
-    mockCreate
-      .mockRejectedValueOnce(new Error('API error'))
-      .mockResolvedValueOnce(claudeResponse('BRIEF'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
+    mockCreate.mockRejectedValueOnce(new Error('API error'))
 
     const result = await handler(event)
 
@@ -98,97 +90,127 @@ describe('generate.post.ts', () => {
     expect(result.palette.textHighlight).toBe('#fbbf24')
   })
 
-  it('utilise la palette fallback par défaut si pas de baseColor', async () => {
+  it('retourne une palette fallback par défaut si pas de baseColor', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
-      prompt: 'Test',
-      apiKey: 'sk-test-123'
+      step: 'palette',
+      apiKey: 'sk-test'
     })
-
-    // Pas de baseColor = pas d'appel palette, research + generate + review
-    mockCreate
-      .mockResolvedValueOnce(claudeResponse('BRIEF'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
 
     const result = await handler(event)
 
-    // 3 appels seulement (pas de palette)
-    expect(mockCreate).toHaveBeenCalledTimes(3)
+    expect(mockCreate).not.toHaveBeenCalled()
     expect(result.palette.accent).toBe('#0073aa')
   })
+
+  // ─── STEP: RESEARCH ─────────────────────────────────
+
+  it('génère un brief structuré', async () => {
+    const event = {} as any
+    readBody.mockResolvedValue({
+      step: 'research',
+      apiKey: 'sk-test',
+      prompt: 'Les bases du HTML',
+      title: 'HTML pour débutants'
+    })
+
+    mockCreate.mockResolvedValueOnce(claudeResponse('BRIEF:\n- Sujet: HTML\nPLAN:\n1. Titre'))
+
+    const result = await handler(event)
+
+    expect(result.brief).toContain('BRIEF')
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejette research sans prompt', async () => {
+    const event = {} as any
+    readBody.mockResolvedValue({
+      step: 'research',
+      apiKey: 'sk-test'
+    })
+
+    await expect(handler(event)).rejects.toThrow('Prompt requis')
+  })
+
+  // ─── STEP: GENERATE ─────────────────────────────────
+
+  it('génère le markdown avec brief', async () => {
+    const event = {} as any
+    readBody.mockResolvedValue({
+      step: 'generate',
+      apiKey: 'sk-test',
+      prompt: 'Les bases du HTML',
+      title: 'HTML',
+      brief: 'BRIEF: HTML basics'
+    })
+
+    const markdown = '# HTML pour **débutants**\n\nIntro\n\n---\n\n# Les **balises**\n\nContenu'
+    mockCreate.mockResolvedValueOnce(claudeResponse(markdown))
+
+    const result = await handler(event)
+
+    expect(result.markdown).toContain('HTML')
+    expect(result.slides).toHaveLength(2)
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+  })
+
+  // ─── STEP: REVIEW ───────────────────────────────────
+
+  it('relit et améliore le markdown', async () => {
+    const event = {} as any
+    const markdown = '# Slide **1**\n\nIntro\n\n---\n\n# Les **bases**\n\nContenu'
+    readBody.mockResolvedValue({
+      step: 'review',
+      apiKey: 'sk-test',
+      markdown
+    })
+
+    const reviewed = '# Slide **1**\n\nIntro améliorée\n\n---\n\n# Les **bases**\n\nContenu enrichi'
+    mockCreate.mockResolvedValueOnce(claudeResponse(reviewed))
+
+    const result = await handler(event)
+
+    expect(result.markdown).toContain('améliorée')
+    expect(result.slides).toHaveLength(2)
+    expect(mockCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejette review sans markdown', async () => {
+    const event = {} as any
+    readBody.mockResolvedValue({
+      step: 'review',
+      apiKey: 'sk-test'
+    })
+
+    await expect(handler(event)).rejects.toThrow('Markdown requis')
+  })
+
+  // ─── VALIDATION MODÈLE ──────────────────────────────
 
   it('valide le modèle et utilise Sonnet par défaut', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
+      step: 'research',
+      apiKey: 'sk-test',
       prompt: 'Test',
-      apiKey: 'sk-test-123',
       model: 'gpt-4-invalid'
     })
 
-    mockCreate
-      .mockResolvedValueOnce(claudeResponse('BRIEF'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
-      .mockResolvedValueOnce(claudeResponse('# Titre\n\nContenu'))
+    mockCreate.mockResolvedValueOnce(claudeResponse('BRIEF'))
 
     await handler(event)
 
-    // Vérifie que le modèle par défaut est utilisé
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'claude-sonnet-4-20250514' })
     )
   })
 
-  it('parse correctement les slides depuis le markdown', async () => {
-    const event = {} as any
-    readBody.mockResolvedValue({
-      prompt: 'Test',
-      apiKey: 'sk-test-123'
-    })
-
-    const markdown = `# Slide **1**
-
-Intro text
-
-[Tag1] [Tag2]
-
----
-
-# Les **bases**
-
-:::tip
-Un conseil important
-:::
-
----
-
-# **Récapitulatif**
-
-:::steps
-1. Première étape
-2. Deuxième étape
-:::`
-
-    mockCreate
-      .mockResolvedValueOnce(claudeResponse('BRIEF'))
-      .mockResolvedValueOnce(claudeResponse(markdown))
-      .mockResolvedValueOnce(claudeResponse(markdown))
-
-    const result = await handler(event)
-
-    expect(result.slides).toHaveLength(3)
-    expect(result.slides[0].title).toBe('Slide **1**')
-    expect(result.slides[1].title).toBe('Les **bases**')
-    expect(result.slides[2].title).toBe('**Récapitulatif**')
-    expect(result.slides[1].content).toContain(':::tip')
-    expect(result.slides[2].content).toContain(':::steps')
-  })
-
   it('propage les erreurs API Claude', async () => {
     const event = {} as any
     readBody.mockResolvedValue({
-      prompt: 'Test',
-      apiKey: 'sk-invalid'
+      step: 'research',
+      apiKey: 'sk-invalid',
+      prompt: 'Test'
     })
 
     mockCreate.mockRejectedValue(new Error('Invalid API key'))

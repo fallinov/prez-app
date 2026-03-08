@@ -254,60 +254,52 @@ async function generatePresentation() {
   abortController.value = new AbortController()
 
   try {
-    // Étape 1 : Génération du contenu
-    // Étape 1 : Génération palette + contenu (l'API fait palette → génération → relecture)
+    const signal = abortController.value.signal
+    const commonBody = { apiKey: apiKey.value, model: selectedModel.value }
+
+    // Étape 1 : Palette WCAG
     setStepStatus('palette', 'active')
-
-    const generatePromise = $fetch('/api/generate', {
+    const paletteResponse = await $fetch('/api/generate', {
       method: 'POST',
-      body: {
-        prompt: prompt.value,
-        apiKey: apiKey.value,
-        title: title.value || 'Présentation',
-        model: selectedModel.value,
-        baseColor: baseColor.value
-      },
-      signal: abortController.value.signal
+      body: { ...commonBody, step: 'palette', baseColor: baseColor.value },
+      signal
     })
-
-    // Progression simulée : palette (1s) → recherche (3s) → génération (6s) → relecture
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('palette', 'done')
-        setStepStatus('research', 'active')
-      }
-    }, 1000)
-
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('research', 'done')
-        setStepStatus('generate', 'active')
-      }
-    }, 3000)
-
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('generate', 'done')
-        setStepStatus('review', 'active')
-      }
-    }, 6000)
-
-    const mdResponse = await generatePromise
-
     setStepStatus('palette', 'done')
+    generatedPalette.value = paletteResponse.palette || null
+
+    // Étape 2 : Recherche et brief structuré
+    setStepStatus('research', 'active')
+    const researchResponse = await $fetch('/api/generate', {
+      method: 'POST',
+      body: { ...commonBody, step: 'research', prompt: prompt.value, title: title.value || 'Présentation' },
+      signal
+    })
     setStepStatus('research', 'done')
+
+    // Étape 3 : Génération du markdown
+    setStepStatus('generate', 'active')
+    const generateResponse = await $fetch('/api/generate', {
+      method: 'POST',
+      body: { ...commonBody, step: 'generate', prompt: prompt.value, title: title.value || 'Présentation', brief: researchResponse.brief },
+      signal
+    })
     setStepStatus('generate', 'done')
+
+    // Étape 4 : Relecture
+    setStepStatus('review', 'active')
+    const reviewResponse = await $fetch('/api/generate', {
+      method: 'POST',
+      body: { ...commonBody, step: 'review', markdown: generateResponse.markdown },
+      signal
+    })
     setStepStatus('review', 'done')
 
-    generatedMarkdown.value = mdResponse.markdown
-    slides.value = mdResponse.slides
-    generatedPalette.value = mdResponse.palette || null
+    generatedMarkdown.value = reviewResponse.markdown
+    slides.value = reviewResponse.slides
 
-    // Étape 4 : Création du HTML
+    // Étape 5 : Création du HTML + revue UX
     setStepStatus('render', 'active')
-
-    // L'API fait render + revue UX (avec la palette générée)
-    const renderPromise = $fetch('/api/render', {
+    const htmlResponse = await $fetch('/api/render', {
       method: 'POST',
       body: {
         markdown: generatedMarkdown.value,
@@ -317,26 +309,16 @@ async function generatePresentation() {
         apiKey: apiKey.value,
         palette: generatedPalette.value,
         model: selectedModel.value
-      }
+      },
+      signal
     })
-
-    // Après 1s, passer à l'étape revue UX
-    setTimeout(() => {
-      if (loading.value) {
-        setStepStatus('render', 'done')
-        setStepStatus('ux-review', 'active')
-      }
-    }, 1000)
-
-    const htmlResponse = await renderPromise
-
     setStepStatus('render', 'done')
     setStepStatus('ux-review', 'done')
 
     generatedHtml.value = htmlResponse.html
     generatedUrl.value = htmlResponse.url
 
-    // Étape 5 : Sauvegarde
+    // Étape 6 : Sauvegarde
     setStepStatus('save', 'active')
     await loadPresentations()
     setStepStatus('save', 'done')
