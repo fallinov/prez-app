@@ -11,8 +11,21 @@ import { join } from 'path'
 
 const BLOB_PREFIX = 'presentations/'
 
+function isVercel(): boolean {
+  return !!process.env.VERCEL
+}
+
 function useBlob(): boolean {
   return !!process.env.BLOB_READ_WRITE_TOKEN
+}
+
+function ensureStorage(): void {
+  if (isVercel() && !useBlob()) {
+    throw new Error(
+      'BLOB_READ_WRITE_TOKEN manquant. Ajoutez un Blob Store dans votre projet Vercel : ' +
+      'Dashboard → Storage → Create → Blob → Connecter au projet.'
+    )
+  }
 }
 
 function localDir(): string {
@@ -22,6 +35,7 @@ function localDir(): string {
 // ─── WRITE ──────────────────────────────────────────────
 
 export async function storageWrite(filename: string, content: string, contentType = 'text/html'): Promise<string> {
+  ensureStorage()
   if (useBlob()) {
     const result = await blobPut(`${BLOB_PREFIX}${filename}`, content, {
       access: 'public',
@@ -42,6 +56,7 @@ export async function storageWrite(filename: string, content: string, contentTyp
 // ─── READ ───────────────────────────────────────────────
 
 export async function storageRead(filename: string): Promise<string | null> {
+  ensureStorage()
   if (useBlob()) {
     try {
       const result = await blobGet(`${BLOB_PREFIX}${filename}`, { access: 'public' })
@@ -94,6 +109,7 @@ export interface StorageFile {
 }
 
 export async function storageList(): Promise<StorageFile[]> {
+  ensureStorage()
   if (useBlob()) {
     const files: StorageFile[] = []
     let cursor: string | undefined
