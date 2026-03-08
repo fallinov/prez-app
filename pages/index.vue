@@ -365,6 +365,39 @@ async function downloadPresentation(pres: PresentationFile) {
   }
 }
 
+// Régénérer le HTML d'une présentation existante (avec le template actuel)
+const regeneratingFilename = ref<string | null>(null)
+
+async function regeneratePresentation(pres: PresentationFile) {
+  regeneratingFilename.value = pres.filename
+  error.value = ''
+
+  try {
+    // Charger les metadata de la présentation
+    const data = await $fetch(`/api/presentations/${pres.filename}`)
+    const meta = data.metadata
+
+    // Re-rendre avec le template actuel (sans revue IA = pas besoin de clé API)
+    const renderResponse = await $fetch('/api/render', {
+      method: 'POST',
+      body: {
+        markdown: meta.markdown,
+        slides: data.slides,
+        baseColor: meta.baseColor,
+        title: meta.title,
+        palette: meta.palette,
+        model: meta.model
+      }
+    })
+
+    await loadPresentations()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Erreur lors de la régénération'
+  } finally {
+    regeneratingFilename.value = null
+  }
+}
+
 // Formater la taille du fichier
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -583,6 +616,15 @@ function logout() {
                     icon="i-lucide-download"
                     title="Télécharger"
                     @click="downloadPresentation(pres)"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    color="neutral"
+                    icon="i-lucide-refresh-cw"
+                    title="Régénérer le HTML"
+                    :loading="regeneratingFilename === pres.filename"
+                    @click="regeneratePresentation(pres)"
                   />
                   <UButton
                     size="xs"
